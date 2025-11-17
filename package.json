@@ -1,0 +1,19 @@
+{
+  "name": "llm-drift-sentinel",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "web/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.0",
+    "typescript": "^5.2.2"
+  }
+}
+

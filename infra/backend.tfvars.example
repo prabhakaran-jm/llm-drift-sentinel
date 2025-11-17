@@ -1,0 +1,3 @@
+bucket = "your-project-id-terraform-state"
+prefix = "infra"
+
