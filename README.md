@@ -45,6 +45,10 @@ GOOGLE_CLOUD_LOCATION=us-central1
 VERTEX_MODEL=gemini-1.5-pro
 # Note: gemini-2.5-pro is available in europe-west4
 USE_STUB=true
+ENVIRONMENT=dev
+# Telemetry (Phase 2)
+PUBSUB_TOPIC_NAME=sentinel-llm-telemetry
+PUBSUB_ENABLED=true
 ```
 
 **Stub Mode**: Set `USE_STUB=true` to test without Vertex AI enabled. This returns mock responses.
@@ -112,10 +116,33 @@ See `infra/README.md` for details.
 
 - **Phase 1**: Gateway with real Vertex AI calls ✅
 - **Infra**: Terraform IaC for APIs ✅
-- **Phase 2**: Telemetry pipeline (Pub/Sub → BigQuery)
+- **Phase 2**: Telemetry pipeline (Pub/Sub → BigQuery) ✅
 - **Phase 3**: Analyzer as Pub/Sub consumer
 - **Phase 4**: Drift engine with embeddings
 - **Phase 5**: Safety and abuse engine
 - **Phase 6**: Datadog metrics and monitors
 - **Phase 7**: Frontend polish
+
+## Phase 2: Telemetry Pipeline
+
+After deploying infrastructure with Terraform, the gateway automatically emits telemetry events to Pub/Sub:
+
+**Telemetry includes:**
+- Request/response data (prompt, response text)
+- Token usage (input, output, total)
+- Latency metrics
+- Model information
+- Error tracking
+- Request IDs for tracing
+
+**To deploy infrastructure:**
+```bash
+cd infra
+terraform apply
+```
+
+**To verify telemetry:**
+- Check Pub/Sub topic: `sentinel-llm-telemetry`
+- Query BigQuery: `sentinel_telemetry.llm_events`
+- Each API call emits a telemetry event automatically
 

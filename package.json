@@ -1,7 +1,9 @@
 {
   "name": "llm-drift-sentinel",
   "version": "0.1.0",
-  "private": true,
+  "description": "LLM Drift & Abuse Sentinel - Monitor LLM applications on Vertex AI/Gemini, detect drift and abuse, push metrics to Datadog",
+  "license": "MIT",
+  "private": false,
   "workspaces": [
     "services/*",
     "web/*"

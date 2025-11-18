@@ -18,3 +18,23 @@ output "apis_enabled" {
   ]
 }
 
+output "pubsub_topic_name" {
+  description = "Pub/Sub topic name for LLM telemetry"
+  value       = google_pubsub_topic.llm_telemetry.name
+}
+
+output "pubsub_topic_id" {
+  description = "Pub/Sub topic ID"
+  value       = google_pubsub_topic.llm_telemetry.id
+}
+
+output "bigquery_dataset_id" {
+  description = "BigQuery dataset ID for telemetry"
+  value       = google_bigquery_dataset.telemetry.dataset_id
+}
+
+output "bigquery_table_id" {
+  description = "BigQuery table ID for telemetry events"
+  value       = google_bigquery_table.telemetry_events.table_id
+}
+
