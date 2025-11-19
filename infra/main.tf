@@ -75,6 +75,24 @@ resource "google_pubsub_topic" "llm_telemetry" {
   depends_on = [google_project_service.pubsub]
 }
 
+# Pub/Sub subscription for analyzer (Phase 3)
+resource "google_pubsub_subscription" "analyzer_sub" {
+  name    = "sentinel-analyzer-sub"
+  topic   = google_pubsub_topic.llm_telemetry.name
+  project = var.project_id
+
+  ack_deadline_seconds = 60
+
+  message_retention_duration = "604800s" # 7 days
+
+  labels = {
+    environment = var.environment
+    service     = "sentinel-analyzer"
+  }
+
+  depends_on = [google_pubsub_topic.llm_telemetry]
+}
+
 # BigQuery dataset for telemetry storage (Phase 2)
 resource "google_bigquery_dataset" "telemetry" {
   dataset_id  = "sentinel_telemetry"

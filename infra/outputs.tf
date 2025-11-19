@@ -38,3 +38,13 @@ output "bigquery_table_id" {
   value       = google_bigquery_table.telemetry_events.table_id
 }
 
+output "pubsub_subscription_name" {
+  description = "Pub/Sub subscription name for analyzer"
+  value       = google_pubsub_subscription.analyzer_sub.name
+}
+
+output "pubsub_subscription_id" {
+  description = "Pub/Sub subscription ID"
+  value       = google_pubsub_subscription.analyzer_sub.id
+}
+

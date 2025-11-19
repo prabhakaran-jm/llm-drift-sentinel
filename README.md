@@ -117,7 +117,7 @@ See `infra/README.md` for details.
 - **Phase 1**: Gateway with real Vertex AI calls ✅
 - **Infra**: Terraform IaC for APIs ✅
 - **Phase 2**: Telemetry pipeline (Pub/Sub → BigQuery) ✅
-- **Phase 3**: Analyzer as Pub/Sub consumer
+- **Phase 3**: Analyzer as Pub/Sub consumer ✅
 - **Phase 4**: Drift engine with embeddings
 - **Phase 5**: Safety and abuse engine
 - **Phase 6**: Datadog metrics and monitors
@@ -145,4 +145,30 @@ terraform apply
 - Check Pub/Sub topic: `sentinel-llm-telemetry`
 - Query BigQuery: `sentinel_telemetry.llm_events`
 - Each API call emits a telemetry event automatically
+
+## Phase 3: Analyzer Service
+
+The analyzer service consumes telemetry events from Pub/Sub and processes them:
+
+**Features:**
+- Subscribes to Pub/Sub topic `sentinel-llm-telemetry`
+- Parses TelemetryEvent messages
+- Runs drift detection (placeholder - Phase 4)
+- Runs safety checks (placeholder - Phase 5)
+- Writes events to BigQuery for storage
+
+**To run analyzer:**
+```bash
+cd services/analyzer
+npm install
+# Set up .env with GOOGLE_CLOUD_PROJECT_ID, PUBSUB_SUBSCRIPTION_NAME, etc.
+npm run dev
+```
+
+**Analyzer processes:**
+- Reads messages from Pub/Sub subscription
+- Computes drift scores (placeholder)
+- Checks safety labels (placeholder with keyword detection)
+- Writes to BigQuery table
+- Acknowledges messages after processing
 
