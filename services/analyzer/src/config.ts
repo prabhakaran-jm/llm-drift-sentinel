@@ -14,6 +14,11 @@ export interface Config {
     tableId: string;
     enabled: boolean;
   };
+  vertex: {
+    projectId: string;
+    location: string;
+    embeddingModel: string;
+  };
   environment: string;
 }
 
@@ -29,6 +34,11 @@ export function loadConfig(): Config {
       datasetId: process.env.BIGQUERY_DATASET_ID || 'sentinel_telemetry',
       tableId: process.env.BIGQUERY_TABLE_ID || 'llm_events',
       enabled: process.env.BIGQUERY_ENABLED !== 'false',
+    },
+    vertex: {
+      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
+      location: process.env.VERTEX_EMBEDDING_LOCATION || process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+      embeddingModel: process.env.VERTEX_EMBEDDING_MODEL || 'text-embedding-004',
     },
     environment: process.env.ENVIRONMENT || 'dev',
   };

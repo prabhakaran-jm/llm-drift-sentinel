@@ -118,7 +118,7 @@ See `infra/README.md` for details.
 - **Infra**: Terraform IaC for APIs ✅
 - **Phase 2**: Telemetry pipeline (Pub/Sub → BigQuery) ✅
 - **Phase 3**: Analyzer as Pub/Sub consumer ✅
-- **Phase 4**: Drift engine with embeddings
+- **Phase 4**: Drift engine with embeddings ✅
 - **Phase 5**: Safety and abuse engine
 - **Phase 6**: Datadog metrics and monitors
 - **Phase 7**: Frontend polish
@@ -167,8 +167,35 @@ npm run dev
 
 **Analyzer processes:**
 - Reads messages from Pub/Sub subscription
-- Computes drift scores (placeholder)
+- Computes drift scores using embeddings (Phase 4)
 - Checks safety labels (placeholder with keyword detection)
 - Writes to BigQuery table
 - Acknowledges messages after processing
+
+## Phase 4: Drift Engine with Embeddings
+
+The drift engine uses Vertex AI embeddings to detect response drift:
+
+**How it works:**
+1. Gets embedding for each response using Vertex AI
+2. Maintains baseline embeddings per endpoint (in-memory)
+3. Calculates cosine similarity between response and baseline
+4. Computes drift score (1 - similarity)
+5. Updates baseline with exponential moving average
+
+**Features:**
+- Real embeddings from Vertex AI (`textembedding-gecko@003`)
+- Baseline storage (in-memory, keyed by endpoint)
+- Cosine similarity calculation
+- Automatic baseline creation and updates
+- Handles errors gracefully
+
+**Configuration:**
+- `VERTEX_EMBEDDING_MODEL`: Embedding model (default: `textembedding-gecko@003`)
+- `GOOGLE_CLOUD_LOCATION`: Vertex AI region (default: `us-central1`)
+
+**Drift scores:**
+- `similarityScore`: 0-1 (1 = identical to baseline)
+- `driftScore`: 0-1 (0 = no drift, 1 = maximum drift)
+- `baselineReady`: Whether baseline has enough samples (5+)
 

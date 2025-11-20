@@ -11,6 +11,8 @@
   "dependencies": {
     "@google-cloud/pubsub": "^3.0.0",
     "@google-cloud/bigquery": "^7.0.0",
+    "@google-cloud/vertexai": "^1.0.0",
+    "google-auth-library": "^9.0.0",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {

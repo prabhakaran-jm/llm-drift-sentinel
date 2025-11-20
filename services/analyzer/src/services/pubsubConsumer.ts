@@ -4,19 +4,30 @@ import { Config } from '../config.js';
 import { computeDrift } from '../engines/driftEngine.js';
 import { checkSafety } from '../engines/safetyEngine.js';
 import { BigQueryWriter } from './bigqueryWriter.js';
+import { EmbeddingsClient } from './embeddingsClient.js';
+import { BaselineStore } from './baselineStore.js';
 
 export class PubSubConsumer {
   private pubsub: PubSub;
   private subscriptionName: string;
   private bigQueryWriter: BigQueryWriter;
+  private embeddingsClient: EmbeddingsClient;
+  private baselineStore: BaselineStore;
   private isRunning: boolean = false;
 
-  constructor(config: Config, bigQueryWriter: BigQueryWriter) {
+  constructor(
+    config: Config,
+    bigQueryWriter: BigQueryWriter,
+    embeddingsClient: EmbeddingsClient,
+    baselineStore: BaselineStore
+  ) {
     this.pubsub = new PubSub({
       projectId: config.pubsub.projectId,
     });
     this.subscriptionName = config.pubsub.subscriptionName;
     this.bigQueryWriter = bigQueryWriter;
+    this.embeddingsClient = embeddingsClient;
+    this.baselineStore = baselineStore;
   }
 
   async start(): Promise<void> {
@@ -54,7 +65,7 @@ export class PubSubConsumer {
 
       // Process in parallel
       const [driftResult, safetyResult] = await Promise.all([
-        computeDrift(event),
+        computeDrift(event, this.embeddingsClient, this.baselineStore),
         checkSafety(event),
       ]);
 

@@ -1,6 +1,8 @@
 import { loadConfig } from './config.js';
 import { PubSubConsumer } from './services/pubsubConsumer.js';
 import { BigQueryWriter } from './services/bigqueryWriter.js';
+import { EmbeddingsClient } from './services/embeddingsClient.js';
+import { BaselineStore } from './services/baselineStore.js';
 
 const config = loadConfig();
 
@@ -8,9 +10,12 @@ console.log('Starting Sentinel Analyzer...');
 console.log(`Environment: ${config.environment}`);
 console.log(`Pub/Sub subscription: ${config.pubsub.subscriptionName}`);
 console.log(`BigQuery: ${config.bigquery.enabled ? `${config.bigquery.datasetId}.${config.bigquery.tableId}` : 'disabled'}`);
+console.log(`Vertex AI: ${config.vertex.projectId}/${config.vertex.location}/${config.vertex.embeddingModel}`);
 
 const bigQueryWriter = new BigQueryWriter(config.bigquery);
-const consumer = new PubSubConsumer(config, bigQueryWriter);
+const embeddingsClient = new EmbeddingsClient(config.vertex);
+const baselineStore = new BaselineStore();
+const consumer = new PubSubConsumer(config, bigQueryWriter, embeddingsClient, baselineStore);
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
