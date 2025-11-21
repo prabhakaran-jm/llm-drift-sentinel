@@ -119,7 +119,7 @@ See `infra/README.md` for details.
 - **Phase 2**: Telemetry pipeline (Pub/Sub → BigQuery) ✅
 - **Phase 3**: Analyzer as Pub/Sub consumer ✅
 - **Phase 4**: Drift engine with embeddings ✅
-- **Phase 5**: Safety and abuse engine
+- **Phase 5**: Safety and abuse engine ✅
 - **Phase 6**: Datadog metrics and monitors
 - **Phase 7**: Frontend polish
 
@@ -191,11 +191,40 @@ The drift engine uses Vertex AI embeddings to detect response drift:
 - Handles errors gracefully
 
 **Configuration:**
-- `VERTEX_EMBEDDING_MODEL`: Embedding model (default: `textembedding-gecko@003`)
-- `GOOGLE_CLOUD_LOCATION`: Vertex AI region (default: `us-central1`)
+- `VERTEX_EMBEDDING_MODEL`: Embedding model (default: `text-embedding-004`)
+- `VERTEX_EMBEDDING_LOCATION`: Embedding region (default: `us-central1`)
 
 **Drift scores:**
 - `similarityScore`: 0-1 (1 = identical to baseline)
 - `driftScore`: 0-1 (0 = no drift, 1 = maximum drift)
 - `baselineReady`: Whether baseline has enough samples (5+)
+
+## Phase 5: Safety and Abuse Engine
+
+The safety engine uses Vertex AI Gemini to classify prompts and responses for safety issues:
+
+**Safety Labels:**
+- `CLEAN`: Normal, safe interaction
+- `TOXIC`: Contains hate speech, harassment, or offensive content
+- `PII`: Contains personally identifiable information
+- `JAILBREAK`: Attempts to bypass safety guidelines
+- `PROMPT_INJECTION`: Attempts to inject malicious instructions
+- `RISKY`: Potentially harmful but not clearly categorized
+
+**How it works:**
+1. Uses Gemini (gemini-1.5-flash) to classify prompt + response
+2. Returns safety label and score (0-1, where 1 = safe)
+3. Detects high-risk interactions (score < 0.5 or high-risk labels)
+4. Falls back to keyword-based detection if classification fails
+
+**Safety scores:**
+- `safetyScore`: 0-1 (1 = completely safe, 0 = unsafe)
+- `safetyLabel`: One of the safety categories
+- `isHighRisk`: Boolean indicating if interaction is high risk
+- `details`: Explanation of the classification
+
+**High-risk detection:**
+- Labels: TOXIC, JAILBREAK, PROMPT_INJECTION
+- Score threshold: < 0.5
+- Triggers alerts (Phase 6: Datadog events)
 

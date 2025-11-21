@@ -6,6 +6,7 @@ import { checkSafety } from '../engines/safetyEngine.js';
 import { BigQueryWriter } from './bigqueryWriter.js';
 import { EmbeddingsClient } from './embeddingsClient.js';
 import { BaselineStore } from './baselineStore.js';
+import { SafetyClassifier } from './safetyClassifier.js';
 
 export class PubSubConsumer {
   private pubsub: PubSub;
@@ -13,13 +14,15 @@ export class PubSubConsumer {
   private bigQueryWriter: BigQueryWriter;
   private embeddingsClient: EmbeddingsClient;
   private baselineStore: BaselineStore;
+  private safetyClassifier: SafetyClassifier;
   private isRunning: boolean = false;
 
   constructor(
     config: Config,
     bigQueryWriter: BigQueryWriter,
     embeddingsClient: EmbeddingsClient,
-    baselineStore: BaselineStore
+    baselineStore: BaselineStore,
+    safetyClassifier: SafetyClassifier
   ) {
     this.pubsub = new PubSub({
       projectId: config.pubsub.projectId,
@@ -28,6 +31,7 @@ export class PubSubConsumer {
     this.bigQueryWriter = bigQueryWriter;
     this.embeddingsClient = embeddingsClient;
     this.baselineStore = baselineStore;
+    this.safetyClassifier = safetyClassifier;
   }
 
   async start(): Promise<void> {
@@ -66,7 +70,7 @@ export class PubSubConsumer {
       // Process in parallel
       const [driftResult, safetyResult] = await Promise.all([
         computeDrift(event, this.embeddingsClient, this.baselineStore),
-        checkSafety(event),
+        checkSafety(event, this.safetyClassifier),
       ]);
 
       // Log results

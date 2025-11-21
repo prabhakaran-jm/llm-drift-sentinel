@@ -1,4 +1,5 @@
 import { TelemetryEvent } from '../types/telemetry.js';
+import { SafetyClassifier } from '../services/safetyClassifier.js';
 
 export type SafetyLabel = 'CLEAN' | 'TOXIC' | 'PII' | 'JAILBREAK' | 'PROMPT_INJECTION' | 'RISKY';
 
@@ -6,41 +7,50 @@ export interface SafetyResult {
   safetyLabel: SafetyLabel;
   safetyScore: number;
   details?: string;
+  isHighRisk: boolean;
 }
 
+const HIGH_RISK_LABELS: SafetyLabel[] = ['TOXIC', 'JAILBREAK', 'PROMPT_INJECTION'];
+const RISK_THRESHOLD = 0.5; // Score below this is considered high risk
+
 /**
- * Placeholder safety engine.
- * Phase 5 will implement real Vertex AI Safety classification.
+ * Check safety using Vertex AI Safety classification.
+ * Uses Gemini to classify prompts and responses for safety issues.
  */
-export async function checkSafety(event: TelemetryEvent): Promise<SafetyResult> {
-  // Placeholder: Simple keyword check
-  // Phase 5 will:
-  // - Use Vertex AI Safety API or Gemini classifier
-  // - Return proper safety labels and scores
-  
-  const promptLower = event.prompt.toLowerCase();
-  const responseLower = event.response.toLowerCase();
-  
-  // Simple keyword detection (placeholder)
-  if (promptLower.includes('ignore') || promptLower.includes('forget')) {
+export async function checkSafety(
+  event: TelemetryEvent,
+  safetyClassifier: SafetyClassifier
+): Promise<SafetyResult> {
+  // Skip safety check for error cases
+  if (event.status === 'error' || !event.response || event.response.length === 0) {
     return {
-      safetyLabel: 'JAILBREAK',
-      safetyScore: 0.3,
-      details: 'Potential jailbreak attempt detected',
+      safetyLabel: 'CLEAN',
+      safetyScore: 1.0,
+      isHighRisk: false,
     };
   }
-  
-  if (responseLower.includes('password') || responseLower.includes('ssn')) {
+
+  try {
+    const classification = await safetyClassifier.classifySafety(event.prompt, event.response);
+    
+    const isHighRisk = HIGH_RISK_LABELS.includes(classification.label) || 
+                       classification.score < RISK_THRESHOLD;
+
     return {
-      safetyLabel: 'PII',
-      safetyScore: 0.4,
-      details: 'Potential PII in response',
+      safetyLabel: classification.label,
+      safetyScore: classification.score,
+      details: classification.details,
+      isHighRisk,
+    };
+  } catch (error: any) {
+    console.error(`[SafetyEngine] Error checking safety for ${event.requestId}:`, error);
+    // Return safe default on error
+    return {
+      safetyLabel: 'CLEAN',
+      safetyScore: 1.0,
+      isHighRisk: false,
+      details: 'Safety check failed, defaulting to CLEAN',
     };
   }
-  
-  return {
-    safetyLabel: 'CLEAN',
-    safetyScore: 1.0,
-  };
 }
 
