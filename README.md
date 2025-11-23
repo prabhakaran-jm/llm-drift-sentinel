@@ -120,7 +120,7 @@ See `infra/README.md` for details.
 - **Phase 3**: Analyzer as Pub/Sub consumer ✅
 - **Phase 4**: Drift engine with embeddings ✅
 - **Phase 5**: Safety and abuse engine ✅
-- **Phase 6**: Datadog metrics and monitors
+- **Phase 6**: Datadog metrics and monitors ✅
 - **Phase 7**: Frontend polish
 
 ## Phase 2: Telemetry Pipeline
@@ -226,5 +226,56 @@ The safety engine uses Vertex AI Gemini to classify prompts and responses for sa
 **High-risk detection:**
 - Labels: TOXIC, JAILBREAK, PROMPT_INJECTION
 - Score threshold: < 0.5
-- Triggers alerts (Phase 6: Datadog events)
+- Triggers Datadog events for alerting
+
+## Phase 6: Datadog Metrics and Monitors
+
+The analyzer emits comprehensive metrics to Datadog for monitoring and alerting:
+
+**Core LLM Metrics:**
+- `llm.request.count` - Total requests
+- `llm.error.count` - Failed requests
+- `llm.latency_ms` - Request latency
+- `llm.tokens.input` - Input tokens
+- `llm.tokens.output` - Output tokens
+- `llm.tokens.total` - Total tokens
+- `llm.cost_usd` - Estimated cost
+
+**Drift Metrics:**
+- `llm.drift_score` - Drift score (0-1)
+- `llm.similarity_score` - Similarity to baseline (0-1)
+- `llm.drift.count` - Count of significant drift events
+
+**Safety Metrics:**
+- `llm.safety.score` - Safety score (0-1)
+- `llm.safety.event.count` - Safety events by label
+
+**Service Metrics:**
+- `sentinel.analyzer.events_processed` - Events processed
+
+**Tags Applied:**
+- `env`, `service`, `endpoint`, `method`
+- `model`, `model_version`, `status`
+- `safety_label`, `baseline_ready`, `drift_threshold`
+
+**Events:**
+- High-risk safety issues trigger Datadog events
+- Alert type: `error` (score < 0.3) or `warning` (score < 0.5)
+
+**Configuration:**
+Add to analyzer `.env`:
+```bash
+DATADOG_API_KEY=your-api-key
+DATADOG_APP_KEY=your-app-key  # Optional - only needed for some admin operations
+DATADOG_SITE=datadoghq.com  # or datadoghq.eu, us3.datadoghq.com, etc.
+DATADOG_ENABLED=true
+```
+
+**To disable Datadog:**
+- Set `DATADOG_ENABLED=false` or omit `DATADOG_API_KEY`
+
+**Getting Datadog API Keys:**
+1. Go to https://app.datadoghq.com/organization-settings/api-keys
+2. Create a new API key (or use an existing one)
+3. Optionally create an Application Key for admin operations: https://app.datadoghq.com/organization-settings/application-keys
 

@@ -19,6 +19,12 @@ export interface Config {
     location: string;
     embeddingModel: string;
   };
+  datadog: {
+    apiKey: string;
+    appKey?: string; // Optional - only needed for some admin operations
+    site: string;
+    enabled: boolean;
+  };
   environment: string;
 }
 
@@ -39,6 +45,12 @@ export function loadConfig(): Config {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
       location: process.env.VERTEX_EMBEDDING_LOCATION || process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
       embeddingModel: process.env.VERTEX_EMBEDDING_MODEL || 'text-embedding-004',
+    },
+    datadog: {
+      apiKey: process.env.DATADOG_API_KEY || '',
+      appKey: process.env.DATADOG_APP_KEY, // Optional
+      site: process.env.DATADOG_SITE || 'datadoghq.com',
+      enabled: process.env.DATADOG_ENABLED !== 'false' && !!process.env.DATADOG_API_KEY,
     },
     environment: process.env.ENVIRONMENT || 'dev',
   };

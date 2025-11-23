@@ -7,6 +7,7 @@ import { BigQueryWriter } from './bigqueryWriter.js';
 import { EmbeddingsClient } from './embeddingsClient.js';
 import { BaselineStore } from './baselineStore.js';
 import { SafetyClassifier } from './safetyClassifier.js';
+import { DatadogClient } from './datadogClient.js';
 
 export class PubSubConsumer {
   private pubsub: PubSub;
@@ -15,6 +16,7 @@ export class PubSubConsumer {
   private embeddingsClient: EmbeddingsClient;
   private baselineStore: BaselineStore;
   private safetyClassifier: SafetyClassifier;
+  private datadogClient: DatadogClient;
   private isRunning: boolean = false;
 
   constructor(
@@ -22,7 +24,8 @@ export class PubSubConsumer {
     bigQueryWriter: BigQueryWriter,
     embeddingsClient: EmbeddingsClient,
     baselineStore: BaselineStore,
-    safetyClassifier: SafetyClassifier
+    safetyClassifier: SafetyClassifier,
+    datadogClient: DatadogClient
   ) {
     this.pubsub = new PubSub({
       projectId: config.pubsub.projectId,
@@ -32,6 +35,7 @@ export class PubSubConsumer {
     this.embeddingsClient = embeddingsClient;
     this.baselineStore = baselineStore;
     this.safetyClassifier = safetyClassifier;
+    this.datadogClient = datadogClient;
   }
 
   async start(): Promise<void> {
@@ -78,6 +82,12 @@ export class PubSubConsumer {
         drift: driftResult,
         safety: safetyResult,
       });
+
+      // Emit Datadog metrics
+      await this.datadogClient.emitMetrics(event, driftResult, safetyResult);
+
+      // Emit Datadog event for high-risk safety issues
+      await this.datadogClient.emitSafetyEvent(event, safetyResult);
 
       // Write to BigQuery
       await this.bigQueryWriter.writeEvent(event);
