@@ -19,13 +19,17 @@ telemetryPublisher.ensureTopicExists().catch(console.error);
 
 app.use(createChatRouter(vertexClient, telemetryPublisher, config));
 
-app.get('/health', (req, res) => {
+// Health check endpoints
+const healthHandler = (req: express.Request, res: express.Response): void => {
   res.json({ 
     status: 'ok',
     mode: config.useStub ? 'stub' : 'vertex-ai',
     telemetry: config.pubsub.enabled ? 'enabled' : 'disabled'
   });
-});
+};
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 app.listen(config.port, () => {
   console.log(`Gateway running on port ${config.port}`);

@@ -1,0 +1,71 @@
+.status-bar {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.75rem 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.status-bar.success {
+  background: rgba(76, 175, 80, 0.2);
+}
+
+.status-bar.error {
+  background: rgba(244, 67, 54, 0.2);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.success {
+  background-color: #4caf50;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+}
+
+.status-dot.error {
+  background-color: #f44336;
+  box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
+}
+
+.status-dot.loading {
+  background-color: #ff9800;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 768px) {
+  .status-bar {
+    padding: 0.75rem 1rem;
+    gap: 1rem;
+  }
+  
+  .status-item {
+    font-size: 0.85rem;
+  }
+}
+

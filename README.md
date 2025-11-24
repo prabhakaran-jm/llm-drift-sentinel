@@ -31,8 +31,9 @@ Monitor LLM applications on Vertex AI / Gemini. Detect drift and abuse, push met
 1. Install dependencies:
 ```bash
 npm install
-cd services/gateway
-npm install
+cd services/gateway && npm install
+cd ../analyzer && npm install
+cd ../../web/client && npm install
 ```
 
 2. Configure gateway:
@@ -91,9 +92,9 @@ curl http://localhost:3000/health
 .
 ├── services/
 │   ├── gateway/          # Express API for /api/chat
-│   └── analyzer/          # Worker service (coming soon)
+│   └── analyzer/         # Worker service for drift/safety analysis
 ├── web/
-│   └── client/           # React frontend (coming soon)
+│   └── client/           # React frontend with chat interface
 └── infra/                # Terraform IaC for GCP resources
 ```
 
@@ -121,7 +122,7 @@ See `infra/README.md` for details.
 - **Phase 4**: Drift engine with embeddings ✅
 - **Phase 5**: Safety and abuse engine ✅
 - **Phase 6**: Datadog metrics and monitors ✅
-- **Phase 7**: Frontend polish
+- **Phase 7**: Frontend polish ✅
 
 ## Phase 2: Telemetry Pipeline
 
@@ -278,4 +279,67 @@ DATADOG_ENABLED=true
 1. Go to https://app.datadoghq.com/organization-settings/api-keys
 2. Create a new API key (or use an existing one)
 3. Optionally create an Application Key for admin operations: https://app.datadoghq.com/organization-settings/application-keys
+
+## Phase 7: Frontend Polish
+
+A modern React frontend provides a beautiful chat interface for interacting with the LLM:
+
+**Features:**
+- **Chat Interface**: Clean, modern UI for sending messages and viewing responses
+- **Real-time Status**: Health check display showing gateway connection status
+- **Message History**: Persistent conversation history with timestamps
+- **Token Information**: Display of token usage (input/output) and model information
+- **Error Handling**: User-friendly error messages and retry capabilities
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Loading States**: Visual feedback during API calls
+
+**Tech Stack:**
+- React 18 with TypeScript
+- Vite for fast development and building
+- Modern CSS with gradients and animations
+- Proxy configuration for seamless API integration
+
+**To run the frontend:**
+
+1. Install dependencies (if not already done):
+```bash
+npm install
+cd web/client
+npm install
+```
+
+2. Start the frontend (from project root):
+```bash
+npm run dev
+```
+
+Or run individually:
+```bash
+cd web/client
+npm run dev
+```
+
+The frontend will start on `http://localhost:5173` and automatically proxy API requests to the gateway at `http://localhost:3000`.
+
+**Frontend Structure:**
+```
+web/client/
+├── src/
+│   ├── components/
+│   │   ├── ChatInterface.tsx    # Main chat UI component
+│   │   └── StatusBar.tsx         # Gateway status indicator
+│   ├── App.tsx                   # Main app component
+│   ├── main.tsx                  # Entry point
+│   └── index.css                 # Global styles
+├── index.html                    # HTML template
+└── vite.config.ts                # Vite configuration
+```
+
+**Usage:**
+1. Ensure the gateway is running (`cd services/gateway && npm run dev`)
+2. Start the frontend (`cd web/client && npm run dev`)
+3. Open `http://localhost:5173` in your browser
+4. Start chatting with the LLM!
+
+The frontend automatically checks gateway health and displays connection status. All interactions are monitored by the analyzer service for drift and safety detection.
 
