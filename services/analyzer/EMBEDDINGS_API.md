@@ -25,7 +25,7 @@ npx tsx test-embeddings.ts
 
 **404 Error - Model Not Found:**
 - Check available models: `gcloud ai models list --region={region}`
-- Try different regions (us-central1, us-east4)
+- Try different regions (us-east1, us-central1, us-east4)
 - Try different model names:
   - `textembedding-gecko@003`
   - `textembedding-gecko@001`
