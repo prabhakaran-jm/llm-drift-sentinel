@@ -1,0 +1,29 @@
+{
+  "name": "LLM Drift Detection Alert",
+  "type": "metric alert",
+  "query": "avg(last_15m):avg:llm.drift_score{baseline_ready:true} > 0.4",
+  "message": "Significant drift detected in LLM responses. {{#is_alert}}Alert: Average drift score exceeds 0.2 (20% dissimilarity) over the last 15 minutes.{{/is_alert}}\n\n**Context:**\n- Service: {{service.name}}\n- Environment: {{env.name}}\n- Endpoint: {{endpoint.name}}\n- Model: {{model.name}}\n- Current Drift Score: {{llm.drift_score}}\n- Similarity Score: {{llm.similarity_score}}\n\n**What This Means:**\nLLM responses are deviating significantly from the established baseline. This could indicate:\n- Model behavior changes\n- Input pattern shifts\n- Prompt engineering issues\n- Model version updates\n\n**Recommended Actions:**\n1. Review recent prompts and responses in BigQuery\n2. Check if model version changed\n3. Analyze drift trends in Datadog dashboard\n4. Consider retraining baseline if intentional change\n\n@webhook-datadog-incidents",
+  "tags": [
+    "service:sentinel",
+    "team:platform",
+    "component:drift-detection",
+    "severity:warning"
+  ],
+  "options": {
+    "thresholds": {
+      "critical": 0.4,
+      "warning": 0.2
+    },
+    "notify_audit": false,
+    "require_full_window": false,
+    "notify_no_data": false,
+    "renotify_interval": 300,
+    "escalation_message": "Drift persists after 5 minutes. Review baseline and model behavior.",
+    "evaluation_delay": 0,
+    "new_host_delay": 300,
+    "include_tags": true,
+    "silenced": {}
+  },
+  "priority": 2
+}
+

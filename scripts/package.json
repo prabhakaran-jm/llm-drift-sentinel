@@ -1,0 +1,20 @@
+{
+  "name": "@sentinel/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "traffic:generate": "tsx traffic-generator.ts",
+    "datadog:import": "tsx import-datadog-config.ts",
+    "metrics:send-test": "tsx send-test-metrics.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.0",
+    "tsx": "^3.12.7",
+    "typescript": "^5.2.2"
+  }
+}
+

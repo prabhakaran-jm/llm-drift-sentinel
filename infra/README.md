@@ -47,7 +47,7 @@ cp terraform.tfvars.example terraform.tfvars
 2. Edit `terraform.tfvars` with your project ID:
 ```hcl
 project_id  = "your-actual-project-id"
-region      = "us-central1"
+region      = "us-east1"
 environment = "dev"
 ```
 

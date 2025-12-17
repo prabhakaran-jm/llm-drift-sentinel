@@ -1,0 +1,460 @@
+{
+  "title": "LLM Sentinel - Application Health Overview",
+  "description": "Comprehensive monitoring dashboard for LLM Drift & Abuse Sentinel. Tracks request metrics, drift detection, safety scores, and system health.",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "timeseries",
+        "title": "Request Rate & Error Rate",
+        "requests": [
+          {
+            "q": "sum:llm.request.count{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "sum:llm.error.count{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Requests/sec",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "timeseries",
+        "title": "Latency Percentiles (p50, p95, p99)",
+        "requests": [
+          {
+            "q": "avg:llm.latency_ms{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "p95:llm.latency_ms{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "p99:llm.latency_ms{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Latency (ms)",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 47,
+        "y": 0,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "timeseries",
+        "title": "Token Usage Over Time",
+        "requests": [
+          {
+            "q": "sum:llm.tokens.input{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "sum:llm.tokens.output{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "sum:llm.tokens.total{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "dashed",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Tokens/sec",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 15,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "timeseries",
+        "title": "Cost Tracking (USD)",
+        "requests": [
+          {
+            "q": "sum:llm.cost_usd{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "USD/sec",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 47,
+        "y": 15,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "timeseries",
+        "title": "Drift Score Trends",
+        "requests": [
+          {
+            "q": "avg:llm.drift_score{baseline_ready:true}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "max:llm.drift_score{baseline_ready:true}",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "dashed",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Drift Score (0-1)",
+          "scale": "linear",
+          "min": "0",
+          "max": "1"
+        },
+        "markers": [
+          {
+            "value": "0.2",
+            "display_type": "error dashed",
+            "label": "Warning Threshold"
+          },
+          {
+            "value": "0.4",
+            "display_type": "error solid",
+            "label": "Critical Threshold"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 30,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "timeseries",
+        "title": "Safety Score Distribution",
+        "requests": [
+          {
+            "q": "avg:llm.safety.score{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "min:llm.safety.score{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "dashed",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Safety Score (0-1)",
+          "scale": "linear",
+          "min": "0",
+          "max": "1"
+        },
+        "markers": [
+          {
+            "value": "0.5",
+            "display_type": "warning dashed",
+            "label": "Warning Threshold"
+          },
+          {
+            "value": "0.3",
+            "display_type": "error solid",
+            "label": "Critical Threshold"
+          }
+        ]
+      },
+      "layout": {
+        "x": 47,
+        "y": 30,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "query_value",
+        "title": "Total Requests (Last Hour)",
+        "requests": [
+          {
+            "q": "sum:llm.request.count{*}.as_count()",
+            "aggregator": "sum"
+          }
+        ],
+        "precision": 0,
+        "text_align": "center",
+        "custom_unit": "requests"
+      },
+      "layout": {
+        "x": 0,
+        "y": 45,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "query_value",
+        "title": "Error Rate (Last Hour)",
+        "requests": [
+          {
+            "q": "sum:llm.error.count{*}.as_count()",
+            "aggregator": "sum"
+          }
+        ],
+        "precision": 2,
+        "text_align": "center",
+        "custom_unit": "errors"
+      },
+      "layout": {
+        "x": 15,
+        "y": 45,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "type": "query_value",
+        "title": "Avg Latency (p50)",
+        "requests": [
+          {
+            "q": "avg:llm.latency_ms{*}",
+            "aggregator": "avg"
+          }
+        ],
+        "precision": 0,
+        "text_align": "center",
+        "custom_unit": "ms"
+      },
+      "layout": {
+        "x": 30,
+        "y": 45,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "type": "query_value",
+        "title": "Avg Drift Score",
+        "requests": [
+          {
+            "q": "avg:llm.drift_score{baseline_ready:true}",
+            "aggregator": "avg"
+          }
+        ],
+        "precision": 3,
+        "text_align": "center"
+      },
+      "layout": {
+        "x": 45,
+        "y": 45,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "type": "query_value",
+        "title": "Avg Safety Score",
+        "requests": [
+          {
+            "q": "avg:llm.safety.score{*}",
+            "aggregator": "avg"
+          }
+        ],
+        "precision": 3,
+        "text_align": "center"
+      },
+      "layout": {
+        "x": 60,
+        "y": 45,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
+      "id": 12,
+      "definition": {
+        "type": "toplist",
+        "title": "Safety Events by Label",
+        "requests": [
+          {
+            "q": "sum:llm.safety.event.count{*} by {safety_label}"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 60,
+        "width": 31,
+        "height": 15
+      }
+    },
+    {
+      "id": 13,
+      "definition": {
+        "type": "toplist",
+        "title": "Requests by Model",
+        "requests": [
+          {
+            "q": "sum:llm.request.count{*} by {model}"
+          }
+        ]
+      },
+      "layout": {
+        "x": 31,
+        "y": 60,
+        "width": 31,
+        "height": 15
+      }
+    },
+    {
+      "id": 14,
+      "definition": {
+        "type": "alert_graph",
+        "title": "Active Alerts",
+        "alert_id": "monitor_alert_id",
+        "viz_type": "timeseries"
+      },
+      "layout": {
+        "x": 62,
+        "y": 60,
+        "width": 32,
+        "height": 15
+      }
+    },
+    {
+      "id": 15,
+      "definition": {
+        "type": "event_stream",
+        "title": "Safety Events Stream",
+        "query": "source:sentinel",
+        "event_size": "l",
+        "tags_execution": "and"
+      },
+      "layout": {
+        "x": 0,
+        "y": 75,
+        "width": 94,
+        "height": 20
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "default": "*",
+      "prefix": "env"
+    },
+    {
+      "name": "service",
+      "default": "*",
+      "prefix": "service"
+    },
+    {
+      "name": "model",
+      "default": "*",
+      "prefix": "model"
+    }
+  ],
+  "layout_type": "free",
+  "notify_list": []
+}
+

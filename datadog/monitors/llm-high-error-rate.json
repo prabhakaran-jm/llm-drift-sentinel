@@ -1,0 +1,29 @@
+{
+  "name": "LLM High Error Rate Alert",
+  "type": "metric alert",
+  "query": "sum(last_5m):sum:llm.error.count{*}.as_count() > 10",
+  "message": "High error rate detected in LLM requests. {{#is_alert}}Critical: More than 10 errors in the last 5 minutes.{{/is_alert}}\n\n**Context:**\n- Service: {{service.name}}\n- Environment: {{env.name}}\n- Endpoint: {{endpoint.name}}\n- Model: {{model.name}}\n\n**Recommended Actions:**\n1. Check gateway logs for error patterns\n2. Verify Vertex AI API status\n3. Review recent telemetry events in BigQuery\n4. Check for rate limiting or quota issues\n\n@webhook-datadog-incidents",
+  "tags": [
+    "service:sentinel",
+    "team:platform",
+    "component:llm",
+    "severity:critical"
+  ],
+  "options": {
+    "thresholds": {
+      "critical": 10,
+      "warning": 5
+    },
+    "notify_audit": false,
+    "require_full_window": false,
+    "notify_no_data": false,
+    "renotify_interval": 60,
+    "escalation_message": "Error rate still elevated after 1 minute. Please investigate immediately.",
+    "evaluation_delay": 0,
+    "new_host_delay": 300,
+    "include_tags": true,
+    "silenced": {}
+  },
+  "priority": 3
+}
+

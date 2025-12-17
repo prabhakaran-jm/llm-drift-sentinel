@@ -1,0 +1,29 @@
+{
+  "name": "LLM High Latency Warning",
+  "type": "metric alert",
+  "query": "avg(last_10m):avg:llm.latency_ms{*} > 10000",
+  "message": "High latency detected in LLM requests. {{#is_alert}}Warning: Average latency exceeds 5 seconds over the last 10 minutes.{{/is_alert}}\n\n**Context:**\n- Service: {{service.name}}\n- Environment: {{env.name}}\n- Endpoint: {{endpoint.name}}\n- Model: {{model.name}}\n- Current P95: {{llm.latency_ms.p95}}\n\n**Recommended Actions:**\n1. Check Vertex AI API response times\n2. Review model selection (consider using gemini-1.5-flash for faster responses)\n3. Check network connectivity to Vertex AI\n4. Review concurrent request volume\n\n@webhook-datadog-incidents",
+  "tags": [
+    "service:sentinel",
+    "team:platform",
+    "component:llm",
+    "severity:warning"
+  ],
+  "options": {
+    "thresholds": {
+      "critical": 10000,
+      "warning": 5000
+    },
+    "notify_audit": false,
+    "require_full_window": false,
+    "notify_no_data": false,
+    "renotify_interval": 120,
+    "escalation_message": "Latency still elevated after 2 minutes. Consider scaling or model optimization.",
+    "evaluation_delay": 0,
+    "new_host_delay": 300,
+    "include_tags": true,
+    "silenced": {}
+  },
+  "priority": 2
+}
+

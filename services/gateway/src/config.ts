@@ -25,7 +25,7 @@ export function loadConfig(): Config {
     environment: process.env.ENVIRONMENT || 'dev',
     vertex: {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
-      location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+      location: process.env.GOOGLE_CLOUD_LOCATION || 'us-east1',
       model: process.env.VERTEX_MODEL || 'gemini-1.5-pro',
     },
     pubsub: {

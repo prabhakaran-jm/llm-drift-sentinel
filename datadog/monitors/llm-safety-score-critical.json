@@ -1,0 +1,29 @@
+{
+  "name": "LLM Safety Score Critical",
+  "type": "metric alert",
+  "query": "avg(last_5m):avg:llm.safety.score{*} < 0.3",
+  "message": "Critical safety issue detected in LLM interactions. {{#is_alert}}Critical: Average safety score below 0.5 over the last 5 minutes.{{/is_alert}}\n\n**Context:**\n- Service: {{service.name}}\n- Environment: {{env.name}}\n- Endpoint: {{endpoint.name}}\n- Model: {{model.name}}\n- Safety Label: {{safety_label.name}}\n- Current Safety Score: {{llm.safety.score}}\n\n**Safety Categories Detected:**\n- TOXIC: Hate speech, harassment, offensive content\n- PII: Personally identifiable information\n- JAILBREAK: Attempts to bypass safety guidelines\n- PROMPT_INJECTION: Malicious instruction injection\n- RISKY: Potentially harmful content\n\n**Recommended Actions:**\n1. **IMMEDIATE**: Review safety events in Datadog Events stream\n2. Check BigQuery for recent unsafe interactions\n3. Review prompt filtering and validation\n4. Consider implementing additional safety filters\n5. Document incident for compliance\n\n@webhook-datadog-incidents",
+  "tags": [
+    "service:sentinel",
+    "team:platform",
+    "component:safety",
+    "severity:critical"
+  ],
+  "options": {
+    "thresholds": {
+      "critical": 0.3,
+      "warning": 0.5
+    },
+    "notify_audit": true,
+    "require_full_window": false,
+    "notify_no_data": false,
+    "renotify_interval": 30,
+    "escalation_message": "Safety issues persist. Immediate review required.",
+    "evaluation_delay": 0,
+    "new_host_delay": 300,
+    "include_tags": true,
+    "silenced": {}
+  },
+  "priority": 1
+}
+

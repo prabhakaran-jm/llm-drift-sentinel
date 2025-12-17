@@ -42,7 +42,7 @@ Create `.env` file in `services/gateway/`:
 ```bash
 PORT=3000
 GOOGLE_CLOUD_PROJECT_ID=your-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
+GOOGLE_CLOUD_LOCATION=us-east1
 VERTEX_MODEL=gemini-1.5-pro
 # Note: gemini-2.5-pro is available in europe-west4
 USE_STUB=true
@@ -58,7 +58,7 @@ PUBSUB_ENABLED=true
 - APIs are enabled (use Terraform in `infra/` or enable manually)
 - You've run `gcloud auth application-default login`
 - Your project ID is correct
-- Use a supported region: `us-central1` (recommended), `europe-west4` (for gemini-2.5-pro), or check [Gemini availability](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models)
+- Use a supported region: `us-east1`, `us-central1`, `europe-west4` (for gemini-2.5-pro), or check [Gemini availability](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models)
 - Use a valid model name: `gemini-2.5-pro`, `gemini-1.5-pro`, `gemini-1.5-flash`, or `gemini-1.0-pro`
 
 3. Start gateway:
@@ -95,7 +95,16 @@ curl http://localhost:3000/health
 │   └── analyzer/         # Worker service for drift/safety analysis
 ├── web/
 │   └── client/           # React frontend with chat interface
-└── infra/                # Terraform IaC for GCP resources
+├── infra/                # Terraform IaC for GCP resources
+├── datadog/              # Datadog configurations
+│   ├── monitors/         # Monitor JSON exports
+│   └── dashboards/       # Dashboard JSON exports
+├── scripts/              # Utility scripts
+│   └── traffic-generator.ts  # Traffic generator for testing
+└── docs/                 # Documentation
+    ├── OBSERVABILITY_STRATEGY.md
+    ├── DETECTION_RULES.md
+    └── INCIDENT_EXAMPLE.md
 ```
 
 ## Infrastructure Setup
@@ -121,7 +130,7 @@ See `infra/README.md` for details.
 - **Phase 3**: Analyzer as Pub/Sub consumer ✅
 - **Phase 4**: Drift engine with embeddings ✅
 - **Phase 5**: Safety and abuse engine ✅
-- **Phase 6**: Datadog metrics and monitors ✅
+- **Phase 6**: Datadog metrics, monitors, dashboard, and traffic generator ✅
 - **Phase 7**: Frontend polish ✅
 
 ## Phase 2: Telemetry Pipeline
@@ -193,7 +202,7 @@ The drift engine uses Vertex AI embeddings to detect response drift:
 
 **Configuration:**
 - `VERTEX_EMBEDDING_MODEL`: Embedding model (default: `text-embedding-004`)
-- `VERTEX_EMBEDDING_LOCATION`: Embedding region (default: `us-central1`)
+- `VERTEX_EMBEDDING_LOCATION`: Embedding region (default: `us-east1`)
 
 **Drift scores:**
 - `similarityScore`: 0-1 (1 = identical to baseline)
@@ -279,6 +288,179 @@ DATADOG_ENABLED=true
 1. Go to https://app.datadoghq.com/organization-settings/api-keys
 2. Create a new API key (or use an existing one)
 3. Optionally create an Application Key for admin operations: https://app.datadoghq.com/organization-settings/application-keys
+
+### Datadog Configuration
+
+**Organization**: LLM Sentinel  
+**Organization URL**: https://app.datadoghq.com/organization-settings  
+**Trial Period**: Started December 2025 (14-day trial)
+
+> **Note**: Your Datadog organization is configured and ready to use. API keys should be added to `services/analyzer/.env`.
+
+### Detection Rules (Monitors)
+
+We've configured **5 monitors** in Datadog for comprehensive alerting:
+
+1. **LLM High Error Rate Alert** (`datadog/monitors/llm-high-error-rate.json`)
+   - Detects: > 10 errors in 5 minutes
+   - Priority: Critical (P1)
+   - Action: Check gateway logs, verify Vertex AI status
+
+2. **LLM High Latency Warning** (`datadog/monitors/llm-high-latency.json`)
+   - Detects: Average latency > 5 seconds over 10 minutes
+   - Priority: Warning (P2)
+   - Action: Review model selection, check network connectivity
+
+3. **LLM Drift Detection Alert** (`datadog/monitors/llm-drift-detection.json`)
+   - Detects: Average drift score > 0.2 over 15 minutes
+   - Priority: Warning (P2)
+   - Action: Review prompts, check model version changes
+
+4. **LLM Safety Score Critical** (`datadog/monitors/llm-safety-score-critical.json`)
+   - Detects: Average safety score < 0.5 over 5 minutes
+   - Priority: Critical (P1)
+   - Action: Review safety events, implement filters
+
+5. **LLM Availability SLO** (`datadog/monitors/llm-availability-slo.json`)
+   - Tracks: 99% availability over 30-day rolling window
+   - Priority: Warning (P2)
+   - Action: Review error rate, check service status
+
+**Importing Monitors:**
+
+1. **Via UI**:
+   - Go to Datadog → Monitors → New Monitor
+   - Select "Import from JSON"
+   - Paste contents of monitor JSON file from `datadog/monitors/`
+   - Configure notification channels
+   - Save
+
+2. **Via API**:
+   ```bash
+   curl -X POST "https://api.datadoghq.com/api/v1/monitor" \
+     -H "Content-Type: application/json" \
+     -H "DD-API-KEY: ${DD_API_KEY}" \
+     -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+     -d @datadog/monitors/llm-high-error-rate.json
+   ```
+
+See `docs/DETECTION_RULES.md` for detailed monitor documentation.
+
+### Dashboard
+
+The **LLM Sentinel - Application Health Overview** dashboard provides comprehensive visibility:
+
+**Widgets:**
+- Request rate & error rate graphs
+- Latency percentiles (p50, p95, p99)
+- Token usage over time (input/output/total)
+- Cost tracking (USD per second)
+- Drift score trends with thresholds
+- Safety score distribution with thresholds
+- Key metrics (total requests, error rate, avg latency, drift, safety)
+- Top lists (safety events by label, requests by model)
+- Active alerts status
+- Safety events stream
+
+**Importing Dashboard:**
+
+1. **Via UI**:
+   - Go to Datadog → Dashboards → New Dashboard
+   - Select "Import from JSON"
+   - Paste contents of `datadog/dashboards/llm-sentinel-overview.json`
+   - Save
+
+2. **Via API**:
+   ```bash
+   curl -X POST "https://api.datadoghq.com/api/v1/dashboard" \
+     -H "Content-Type: application/json" \
+     -H "DD-API-KEY: ${DD_API_KEY}" \
+     -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+     -d @datadog/dashboards/llm-sentinel-overview.json
+   ```
+
+### Traffic Generator
+
+A configurable traffic generator script is available for testing detection rules and generating load:
+
+**Location**: `scripts/traffic-generator.ts`
+
+**Features:**
+- Configurable duration and request rate
+- Mix of prompt types (normal, toxic, jailbreak, PII, repetitive)
+- Concurrent requests for load testing
+- Progress logging and statistics
+
+**Usage:**
+
+1. Install dependencies:
+   ```bash
+   cd scripts
+   npm install
+   ```
+
+2. Run traffic generator:
+   ```bash
+   npm run traffic:generate -- --duration=5m --rate=10/s --toxic=20%
+   ```
+
+**Options:**
+- `--duration=DURATION`: Duration (e.g., `5m`, `30s`, `1h`). Default: `5m`
+- `--rate=RATE`: Request rate (e.g., `10/s`, `5/m`). Default: `10/s`
+- `--concurrent=N`: Number of concurrent requests. Default: `1`
+- `--normal=PERCENT`: Percentage of normal prompts (e.g., `60%`). Default: `60%`
+- `--toxic=PERCENT`: Percentage of toxic prompts (e.g., `20%`). Default: `10%`
+- `--jailbreak=PERCENT`: Percentage of jailbreak prompts. Default: `10%`
+- `--pii=PERCENT`: Percentage of PII prompts. Default: `10%`
+- `--repetitive=PERCENT`: Percentage of repetitive prompts. Default: `10%`
+- `--verbose, -v`: Enable verbose logging
+- `--help, -h`: Show help message
+
+**Environment Variables:**
+- `GATEWAY_URL`: Gateway URL (default: `http://localhost:3000`)
+
+**Examples:**
+```bash
+# Test error rate monitor
+npm run traffic:generate -- --duration=5m --rate=20/s --concurrent=5
+
+# Test safety monitor
+npm run traffic:generate -- --duration=2m --rate=10/s --toxic=50%
+
+# Test drift monitor
+npm run traffic:generate -- --duration=10m --rate=5/s --repetitive=100%
+
+# Normal traffic mix
+npm run traffic:generate -- --duration=10m --rate=10/s --normal=100%
+```
+
+**Output:**
+The script displays:
+- Configuration summary
+- Real-time progress (if verbose)
+- Final statistics:
+  - Total requests
+  - Success/error counts and percentages
+  - Latency statistics (average, p50, p95, p99)
+
+### Incident Management
+
+When detection rules fire, they create Datadog events that can trigger incident creation:
+
+1. **Monitor Triggers**: Alert fires based on threshold
+2. **Event Created**: Datadog event with context and recommended actions
+3. **Incident Created**: Configure webhook to create incidents from alerts
+4. **Investigation**: Engineers review dashboard, events, and BigQuery
+5. **Resolution**: Update status and document root cause
+
+See `docs/INCIDENT_EXAMPLE.md` for detailed incident workflow examples.
+
+### Observability Strategy
+
+For a comprehensive overview of our observability approach, see:
+- `docs/OBSERVABILITY_STRATEGY.md` - Overall strategy and architecture
+- `docs/DETECTION_RULES.md` - Detailed monitor documentation
+- `docs/INCIDENT_EXAMPLE.md` - Incident management examples
 
 ## Phase 7: Frontend Polish
 

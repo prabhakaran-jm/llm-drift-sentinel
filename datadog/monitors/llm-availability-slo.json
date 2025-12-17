@@ -1,0 +1,33 @@
+{
+  "name": "LLM Availability SLO",
+  "type": "slo alert",
+  "query": {
+    "numerator": "sum:llm.request.count{status:success}.as_count()",
+    "denominator": "sum:llm.request.count{*}.as_count()"
+  },
+  "target": 0.99,
+  "timeframe": "30d",
+  "message": "LLM Availability SLO Status: {{#is_alert}}Critical: SLO below target (99% availability).{{/is_alert}} {{#is_warn}}Warning: SLO approaching threshold.{{/is_warn}}\n\n**SLO Details:**\n- Target: 99% availability (30-day rolling window)\n- Current Status: {{slo.status}}\n- Error Budget Remaining: {{slo.error_budget_remaining}}\n- Burn Rate: {{slo.burn_rate}}\n\n**Context:**\n- Service: {{service.name}}\n- Environment: {{env.name}}\n\n**Recommended Actions:**\n1. Review error rate monitor for root causes\n2. Check Vertex AI service status\n3. Review recent incidents and outages\n4. Consider increasing error budget if needed\n\n@webhook-datadog-incidents",
+  "tags": [
+    "service:sentinel",
+    "team:platform",
+    "component:llm",
+    "slo:availability"
+  ],
+  "options": {
+    "thresholds": {
+      "target": 0.99,
+      "warning": 0.995
+    },
+    "notify_audit": false,
+    "require_full_window": true,
+    "notify_no_data": false,
+    "renotify_interval": 1440,
+    "evaluation_delay": 0,
+    "new_host_delay": 300,
+    "include_tags": true,
+    "silenced": {}
+  },
+  "priority": 2
+}
+
