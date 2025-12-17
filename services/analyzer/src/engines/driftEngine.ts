@@ -54,8 +54,10 @@ export async function computeDrift(
     // Calculate cosine similarity
     const similarity = cosineSimilarity(responseEmbedding, baseline.embedding);
     
-    // Clamp similarity to [0, 1] range (cosine similarity can be [-1, 1])
-    const clampedSimilarity = Math.max(0, Math.min(1, (similarity + 1) / 2));
+    // Clamp similarity to [0, 1] range
+    // Note: Text embeddings are non-negative, so cosine similarity is typically [0, 1]
+    // If negative values occur, clamp to 0
+    const clampedSimilarity = Math.max(0, Math.min(1, similarity));
     
     // Drift score is inverse of similarity
     const driftScore = 1 - clampedSimilarity;

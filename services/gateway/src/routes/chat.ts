@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import tracer from 'dd-trace';
 import { VertexClient } from '../vertexClient.js';
 import { TelemetryPublisher } from '../services/telemetryPublisher.js';
 import { TelemetryEvent } from '../types/telemetry.js';
@@ -13,28 +14,65 @@ export function createChatRouter(
   const router = Router();
 
   router.post('/api/chat', async (req: Request, res: Response) => {
+    // Get active span for APM tracing
+    const span = tracer.scope().active();
     const requestId = uuidv4();
     const startTime = Date.now();
     let status: 'success' | 'error' = 'success';
     let errorMessage: string | undefined;
 
+    // Set trace tags
+    span?.setTag('request.id', requestId);
+    span?.setTag('llm.model', config.vertex.model);
+    span?.setTag('llm.endpoint', '/api/chat');
+
     try {
       const { message } = req.body;
 
+      // Input validation
       if (!message || typeof message !== 'string') {
-        return res.status(400).json({ error: 'Message is required' });
+        return res.status(400).json({
+          error: 'Invalid request',
+          details: 'Message must be a non-empty string',
+        });
       }
 
-      const response = await vertexClient.chatCompletion(message);
+      // Length validation
+      if (message.length > 10000) {
+        return res.status(400).json({
+          error: 'Message too long',
+          details: 'Maximum message length is 10,000 characters',
+          maxLength: 10000,
+        });
+      }
+
+      // Sanitize: trim and limit length
+      const sanitizedMessage = message.trim();
+      
+      if (sanitizedMessage.length === 0) {
+        return res.status(400).json({
+          error: 'Empty message',
+          details: 'Message cannot be empty or whitespace only',
+        });
+      }
+
+      const response = await vertexClient.chatCompletion(sanitizedMessage);
       const latencyMs = Date.now() - startTime;
+
+      // Set APM trace tags for successful response
+      span?.setTag('llm.tokens.in', response.tokensIn);
+      span?.setTag('llm.tokens.out', response.tokensOut);
+      span?.setTag('llm.tokens.total', response.tokensIn + response.tokensOut);
+      span?.setTag('llm.latency_ms', latencyMs);
+      span?.setTag('llm.response.length', response.text.length);
 
       const telemetryEvent: TelemetryEvent = {
         requestId,
         timestamp: new Date().toISOString(),
         endpoint: '/api/chat',
         method: 'POST',
-        prompt: message,
-        promptLength: message.length,
+        prompt: sanitizedMessage,
+        promptLength: sanitizedMessage.length,
         response: response.text,
         responseLength: response.text.length,
         modelName: response.modelName,
@@ -62,6 +100,11 @@ export function createChatRouter(
       status = 'error';
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const latencyMs = Date.now() - startTime;
+
+      // Set APM trace tags for error
+      span?.setTag('error', true);
+      span?.setTag('error.message', errorMessage);
+      span?.setTag('error.type', error instanceof Error ? error.constructor.name : 'Unknown');
 
       console.error('Chat error:', error);
 

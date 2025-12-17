@@ -3,6 +3,7 @@ import { TelemetryEvent } from '../types/telemetry.js';
 import { Config } from '../config.js';
 import { computeDrift } from '../engines/driftEngine.js';
 import { checkSafety } from '../engines/safetyEngine.js';
+import { AnomalyDetector } from '../engines/anomalyEngine.js';
 import { BigQueryWriter } from './bigqueryWriter.js';
 import { EmbeddingsClient } from './embeddingsClient.js';
 import { BaselineStore } from './baselineStore.js';
@@ -17,6 +18,7 @@ export class PubSubConsumer {
   private baselineStore: BaselineStore;
   private safetyClassifier: SafetyClassifier;
   private datadogClient: DatadogClient;
+  private anomalyDetector: AnomalyDetector;
   private isRunning: boolean = false;
 
   constructor(
@@ -36,6 +38,7 @@ export class PubSubConsumer {
     this.baselineStore = baselineStore;
     this.safetyClassifier = safetyClassifier;
     this.datadogClient = datadogClient;
+    this.anomalyDetector = new AnomalyDetector();
   }
 
   async start(): Promise<void> {
@@ -77,14 +80,21 @@ export class PubSubConsumer {
         checkSafety(event, this.safetyClassifier),
       ]);
 
+      // Detect anomalies in drift scores
+      const anomalyResult = this.anomalyDetector.detectAnomaly(
+        event.endpoint,
+        driftResult.driftScore
+      );
+
       // Log results
       console.log(`[Consumer] Event ${event.requestId}:`, {
         drift: driftResult,
         safety: safetyResult,
+        anomaly: anomalyResult.isAnomaly ? { zScore: anomalyResult.zScore } : null,
       });
 
-      // Emit Datadog metrics
-      await this.datadogClient.emitMetrics(event, driftResult, safetyResult);
+      // Emit Datadog metrics (including anomaly if detected)
+      await this.datadogClient.emitMetrics(event, driftResult, safetyResult, anomalyResult);
 
       // Emit Datadog event for high-risk safety issues
       await this.datadogClient.emitSafetyEvent(event, safetyResult);

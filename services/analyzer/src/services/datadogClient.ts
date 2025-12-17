@@ -3,6 +3,7 @@ import { Config } from '../config.js';
 import { TelemetryEvent } from '../types/telemetry.js';
 import { DriftResult } from '../engines/driftEngine.js';
 import { SafetyResult } from '../engines/safetyEngine.js';
+import { AnomalyResult } from '../engines/anomalyEngine.js';
 
 export class DatadogClient {
   private metricsApi: v1.MetricsApi;
@@ -38,7 +39,8 @@ export class DatadogClient {
   async emitMetrics(
     event: TelemetryEvent,
     driftResult: DriftResult,
-    safetyResult: SafetyResult
+    safetyResult: SafetyResult,
+    anomalyResult?: AnomalyResult
   ): Promise<void> {
     if (!this.enabled) {
       console.log('[Datadog] Stub mode - metrics not sent');
@@ -127,6 +129,24 @@ export class DatadogClient {
           metric: 'llm.drift.count',
           points: [[timestamp, 1]],
           tags: [...tags, `drift_threshold:0.2`],
+        });
+      }
+
+      // Add anomaly metrics if anomaly detected
+      if (anomalyResult && anomalyResult.isAnomaly) {
+        metrics.push({
+          metric: 'llm.drift.anomaly',
+          points: [[timestamp, 1]],
+          tags: [
+            ...tags,
+            `z_score:${anomalyResult.zScore.toFixed(2)}`,
+            `anomaly_threshold:${anomalyResult.threshold.toFixed(3)}`,
+          ],
+        });
+        metrics.push({
+          metric: 'llm.drift.z_score',
+          points: [[timestamp, Math.abs(anomalyResult.zScore)]],
+          tags: [...tags],
         });
       }
 

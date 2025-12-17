@@ -43,7 +43,7 @@ export function loadConfig(): Config {
     },
     vertex: {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
-      location: process.env.VERTEX_EMBEDDING_LOCATION || process.env.GOOGLE_CLOUD_LOCATION || 'us-east1',
+      location: process.env.VERTEX_EMBEDDING_LOCATION || process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
       embeddingModel: process.env.VERTEX_EMBEDDING_MODEL || 'text-embedding-004',
     },
     datadog: {
