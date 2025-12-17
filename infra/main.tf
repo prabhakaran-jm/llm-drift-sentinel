@@ -219,6 +219,8 @@ resource "google_bigquery_table" "telemetry_events" {
     service     = "sentinel"
   }
 
+  deletion_protection = false
+
   depends_on = [google_bigquery_dataset.telemetry]
 }
 

@@ -21,7 +21,7 @@ All monitors are configured to:
 2. **llm-high-latency.json** - Detects high latency (> 5s average over 10m)
 3. **llm-drift-detection.json** - Detects response drift (> 0.2 drift score over 15m)
 4. **llm-safety-score-critical.json** - Detects safety issues (< 0.5 safety score over 5m)
-5. **llm-availability-slo.json** - Tracks 99% availability SLO (30-day rolling)
+5. **llm-availability-slo.json** - Tracks 99% availability SLO (30-day rolling - To be created manually) 
 
 See `docs/DETECTION_RULES.md` for detailed documentation.
 
