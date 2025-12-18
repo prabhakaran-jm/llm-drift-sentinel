@@ -434,7 +434,18 @@ function ChatInterface() {
         }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
+      let errorMessage = 'An unexpected error occurred'
+      
+      if (err instanceof TypeError && err.message === 'Failed to fetch') {
+        // Network error - provide helpful diagnostics
+        const apiUrl = getApiUrl('/api/chat')
+        errorMessage = `Network error: Cannot reach Gateway API at ${apiUrl}. ` +
+          `Please check: 1) Gateway service is running, 2) API URL is configured correctly, ` +
+          `3) CORS is enabled on Gateway.`
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      
       setError(errorMessage)
       
       const errorMsg: Message = {

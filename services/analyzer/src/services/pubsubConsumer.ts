@@ -1,4 +1,5 @@
 import { PubSub, Message } from '@google-cloud/pubsub';
+import tracer from 'dd-trace';
 import { TelemetryEvent } from '../types/telemetry.js';
 import { Config } from '../config.js';
 import { computeDrift } from '../engines/driftEngine.js';
@@ -75,8 +76,16 @@ export class PubSubConsumer {
   }
 
   private async handleMessage(message: Message): Promise<void> {
+    const span = tracer.startSpan('analyzer.process_message');
+    
     try {
       const event = this.parseMessage(message);
+      
+      // Set trace tags
+      span?.setTag('request.id', event.requestId);
+      span?.setTag('llm.endpoint', event.endpoint);
+      span?.setTag('llm.model', event.modelName);
+      span?.setTag('llm.environment', event.environment);
       
       console.log(`[Consumer] Processing event ${event.requestId}`);
 
@@ -124,6 +133,16 @@ export class PubSubConsumer {
         }
       }
 
+      // Set trace tags for results
+      span?.setTag('llm.drift.score', driftResult.driftScore);
+      span?.setTag('llm.safety.score', safetyResult.safetyScore);
+      span?.setTag('llm.safety.label', safetyResult.safetyLabel);
+      span?.setTag('llm.baseline.ready', driftResult.baselineReady);
+      if (anomalyResult.isAnomaly) {
+        span?.setTag('llm.anomaly.detected', true);
+        span?.setTag('llm.anomaly.z_score', anomalyResult.zScore);
+      }
+
       // Emit Datadog metrics (including anomaly if detected)
       await this.datadogClient.emitMetrics(event, driftResult, safetyResult, anomalyResult);
 
@@ -147,10 +166,20 @@ export class PubSubConsumer {
       // Acknowledge message
       message.ack();
       console.log(`[Consumer] Processed and acknowledged event ${event.requestId}`);
+      
+      span?.finish();
     } catch (error) {
       console.error('[Consumer] Error processing message:', error);
+      
+      // Set error tags on span
+      span?.setTag('error', true);
+      span?.setTag('error.message', error instanceof Error ? error.message : String(error));
+      span?.setTag('error.type', error instanceof Error ? error.constructor.name : 'Unknown');
+      
       // Nack message to retry later
       message.nack();
+      
+      span?.finish();
     }
   }
 

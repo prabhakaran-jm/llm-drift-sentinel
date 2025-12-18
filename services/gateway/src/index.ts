@@ -19,7 +19,13 @@ tracer.init({
 const config = loadConfig();
 const app = express();
 
-app.use(cors());
+// CORS configuration - allow all origins for now (can be restricted in production)
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 // Apply rate limiting to API routes

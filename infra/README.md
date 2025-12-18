@@ -12,11 +12,73 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
-## Remote Backend Setup (One-time)
+## Quick Start
 
-Terraform state is stored remotely in a GCS bucket for team collaboration.
+1. **Configure variables:**
+```bash
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your project_id, region, and environment
+```
 
-1. Bootstrap the backend bucket:
+2. **Initialize Terraform:**
+```bash
+terraform init
+```
+
+If using a GCS backend (optional, for team collaboration):
+```bash
+# First, bootstrap the backend (one-time)
+cd bootstrap
+cp terraform.tfvars.example terraform.tfvars
+# Edit with your project_id and unique bucket name
+terraform init && terraform apply
+
+# Then configure main infra
+cd ..
+cp backend.tfvars.example backend.tfvars
+# Edit with the bucket name from bootstrap output
+terraform init -backend-config=backend.tfvars
+```
+
+3. **Deploy infrastructure:**
+```bash
+terraform plan   # Review changes
+terraform apply  # Deploy
+```
+
+## What Gets Created
+
+- **APIs**: Vertex AI, Pub/Sub, BigQuery, Cloud Run, Artifact Registry
+- **Artifact Registry**: Docker repository for images
+- **Service Accounts**: Gateway and Analyzer with proper IAM roles
+- **Cloud Run Services**: Gateway, Analyzer, and Frontend
+- **Pub/Sub**: Topic and subscription for telemetry
+- **BigQuery**: Dataset and tables for telemetry storage
+
+## Deployment Workflow
+
+1. **Build and push images:**
+```bash
+./scripts/deploy.sh
+```
+
+2. **Deploy with Terraform:**
+```bash
+cd infra
+terraform apply
+```
+
+3. **For code updates (after initial deployment):**
+```bash
+./scripts/deploy.sh
+./scripts/update-cloud-run.sh  # Faster than terraform apply
+```
+
+## Remote Backend Setup (Optional)
+
+For team collaboration, store Terraform state in a GCS bucket:
+
+1. **Bootstrap backend:**
 ```bash
 cd bootstrap
 cp terraform.tfvars.example terraform.tfvars
@@ -25,63 +87,29 @@ terraform init
 terraform apply
 ```
 
-2. Note the bucket name from output:
+2. **Get bucket name:**
 ```bash
 terraform output backend_bucket_name
 ```
 
-3. Configure backend in main infra:
+3. **Configure main infra:**
 ```bash
 cd ..
 cp backend.tfvars.example backend.tfvars
 # Edit backend.tfvars with the bucket name from step 2
-```
-
-## Main Infrastructure Setup
-
-1. Copy example variables:
-```bash
-cp terraform.tfvars.example terraform.tfvars
-```
-
-2. Edit `terraform.tfvars` with your project ID:
-```hcl
-project_id  = "your-actual-project-id"
-region      = "us-east1"
-environment = "dev"
-```
-
-3. Initialize Terraform with backend:
-```bash
 terraform init -backend-config=backend.tfvars
 ```
 
-4. Review plan:
+**Note**: After first init with backend, you can use `terraform init` normally.
+
+## Outputs
+
+Get service URLs after deployment:
 ```bash
-terraform plan
+terraform output gateway_service_url
+terraform output analyzer_service_url
+terraform output frontend_service_url
 ```
-
-5. Apply:
-```bash
-terraform apply
-```
-
-**Note**: After first init with backend, you can use `terraform init` normally. The backend config is stored in `.terraform/`.
-
-## What Gets Created
-
-- **Vertex AI API**: Enabled for Gemini model access
-- **Pub/Sub API**: Enabled for telemetry pipeline (Phase 2)
-- **BigQuery API**: Enabled for telemetry storage (Phase 2)
-- **Cloud Run API**: Enabled for service deployment
-
-## Next Steps
-
-After Phase 1, we'll add:
-- Pub/Sub topics and subscriptions
-- BigQuery datasets and tables
-- Cloud Run service definitions
-- IAM roles and service accounts
 
 ## Cleanup
 
@@ -90,5 +118,5 @@ To destroy all resources:
 terraform destroy
 ```
 
-**Note**: This will disable APIs but won't delete your project.
+**Warning**: This will delete all infrastructure. Make sure you have backups if needed.
 

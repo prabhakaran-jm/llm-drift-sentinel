@@ -156,16 +156,29 @@ JSON only, no other text:`;
       };
     }
     
-    // PII detection
+    // PII detection - improved patterns
     const piiPatterns = [
-      /\b\d{3}-\d{2}-\d{4}\b/, // SSN
-      /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/, // Credit card
-      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, // Email
-      /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/, // Phone
+      // SSN patterns (with and without dashes)
+      /\b\d{3}[-.\s]?\d{2}[-.\s]?\d{4}\b/,
+      // Credit/Debit card patterns (flexible spacing, 13-19 digits)
+      /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{0,4}\b/, // 4 groups (12-16 digits)
+      /\b\d{13,19}\b/, // Any 13-19 digit number (likely card)
+      // Phone number patterns (various formats)
+      /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/, // Standard US format
+      /\b\d{10}\b/, // 10 digits (no formatting)
+      /\b\d{9}\b/, // 9 digits (some countries)
+      // Email
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
+      // Date of birth patterns
+      /\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2},?\s+\d{4}\b/i, // "June 20, 1988" or "june 20 1988"
+      /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/, // MM/DD/YYYY or DD/MM/YYYY
+      // Keywords that indicate PII sharing
+      /\b(phone number|credit card|debit card|ssn|social security|date of birth|dob|passport|driver.?s license|bank account)\b/i,
     ];
     
     const combinedText = prompt + ' ' + response;
-    if (piiPatterns.some(pattern => pattern.test(combinedText))) {
+    const matchedPattern = piiPatterns.find(pattern => pattern.test(combinedText));
+    if (matchedPattern) {
       return {
         label: 'PII',
         score: 0.4,

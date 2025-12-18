@@ -108,8 +108,13 @@ resource "google_cloud_run_service" "gateway" {
         }
 
         env {
+          name  = "VERTEX_LOCATION"
+          value = "us-central1"
+        }
+
+        env {
           name  = "VERTEX_MODEL"
-          value = "gemini-1.5-pro"
+          value = "gemini-2.0-flash"
         }
 
         env {
@@ -241,7 +246,7 @@ resource "google_cloud_run_service" "analyzer" {
 
         env {
           name  = "VERTEX_EMBEDDING_LOCATION"
-          value = var.region
+          value = "us-central1"
         }
 
         env {

@@ -2,7 +2,71 @@
 
 Utility scripts for the LLM Drift & Abuse Sentinel.
 
-## Traffic Generator
+## Deployment Scripts
+
+### deploy.sh
+
+Main deployment script that builds and pushes Docker images for all services.
+
+**Usage:**
+```bash
+./scripts/deploy.sh
+```
+
+**What it does:**
+- Builds and pushes Gateway, Analyzer, and Frontend Docker images
+- Automatically retrieves Gateway URL from Terraform for frontend build
+- Pushes images to Artifact Registry
+
+**Environment Variables:**
+- `GOOGLE_CLOUD_PROJECT_ID` - GCP Project ID
+- `GOOGLE_CLOUD_REGION` - GCP Region (default: us-east1)
+- `GATEWAY_URL` - Optional, will try to get from Terraform if not set
+
+### update-cloud-run.sh
+
+Updates Cloud Run services with the latest `:latest` tagged images.
+
+**Usage:**
+```bash
+./scripts/update-cloud-run.sh
+```
+
+**What it does:**
+- Forces Cloud Run to pull the latest images
+- Updates Gateway, Analyzer, and Frontend services
+- Faster than Terraform for code updates after initial deployment
+
+**Note:** Use this after rebuilding images with the same tag. Terraform won't detect changes when using `:latest` tag.
+
+## Datadog Scripts
+
+### import-datadog-monitors.js
+
+Imports Datadog monitors from JSON files via API.
+
+**Usage:**
+```bash
+# Dry run (validate without importing)
+node scripts/import-datadog-monitors.js --dry-run
+
+# Import all monitors
+node scripts/import-datadog-monitors.js
+
+# Import specific monitor
+node scripts/import-datadog-monitors.js --monitor llm-safety-score-critical
+```
+
+**Environment Variables:**
+- `DD_API_KEY` - Datadog API key (required)
+- `DD_APP_KEY` - Datadog Application key (optional, but recommended)
+- `DD_SITE` - Datadog site (default: datadoghq.com)
+
+**See:** `README.md` for detailed Datadog setup instructions.
+
+## Testing Scripts
+
+### Traffic Generator
 
 **File**: `traffic-generator.ts`
 

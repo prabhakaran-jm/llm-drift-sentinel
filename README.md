@@ -45,8 +45,12 @@ Create `.env` file in `services/gateway/`:
 PORT=3000
 GOOGLE_CLOUD_PROJECT_ID=your-project-id
 GOOGLE_CLOUD_LOCATION=us-east1
-VERTEX_MODEL=gemini-1.5-pro
-# Note: gemini-2.5-pro is available in europe-west4
+VERTEX_LOCATION=us-central1
+VERTEX_MODEL=gemini-2.0-flash
+# Note: GOOGLE_CLOUD_LOCATION is for GCP resources (Cloud Run, Pub/Sub, etc.)
+# VERTEX_LOCATION must be us-central1 (Vertex AI models are only available there)
+# Use short model names (e.g., gemini-2.0-flash) - SDK will try variants automatically
+# See docs/TROUBLESHOOTING.md for troubleshooting
 USE_STUB=true
 ENVIRONMENT=dev
 # Telemetry (Phase 2)
@@ -60,8 +64,10 @@ PUBSUB_ENABLED=true
 - APIs are enabled (use Terraform in `infra/` or enable manually)
 - You've run `gcloud auth application-default login`
 - Your project ID is correct
-- Use a supported region: `us-east1`, `us-central1`, `europe-west4` (for gemini-2.5-pro), or check [Gemini availability](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models)
-- Use a valid model name: `gemini-2.5-pro`, `gemini-1.5-pro`, `gemini-1.5-flash`, or `gemini-1.0-pro`
+- GCP resources (Cloud Run, Pub/Sub, BigQuery) can be in any region (default: `us-east1`)
+- **Vertex AI models must use `us-central1`** - set `VERTEX_LOCATION=us-central1` (or `VERTEX_EMBEDDING_LOCATION=us-central1` for analyzer)
+- Use short model names (e.g., `gemini-2.0-flash`) - the SDK automatically tries variants if needed
+- See `docs/TROUBLESHOOTING.md` if you encounter errors
 
 3. Start gateway:
 ```bash
@@ -152,6 +158,64 @@ After deploying infrastructure with Terraform, the gateway automatically emits t
 cd infra
 terraform apply
 ```
+
+## Cloud Run Deployment
+
+To deploy all services to Google Cloud Run:
+
+### Quick Deployment
+
+Use the deployment script which automatically handles Gateway URL configuration:
+
+```bash
+# Set environment variables
+export GOOGLE_CLOUD_PROJECT_ID="your-project-id"
+export GOOGLE_CLOUD_REGION="us-east1"  # Region for GCP resources (Cloud Run, Pub/Sub, etc.)
+export ENVIRONMENT="dev"
+# Note: Vertex AI models automatically use us-central1 (configured in Cloud Run)
+
+# Run deployment script
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh
+```
+
+**What the script does:**
+1. ✅ Generates package-lock.json files if missing
+2. ✅ Creates Artifact Registry repository via Terraform (if needed)
+3. ✅ Builds and pushes Gateway Docker image
+4. ✅ Builds and pushes Analyzer Docker image
+5. ✅ Automatically gets Gateway URL from Terraform (if Gateway is already deployed)
+6. ✅ Builds and pushes Frontend Docker image with Gateway URL
+7. ✅ Handles first deployment (when Gateway URL isn't available yet)
+
+**Gateway URL Handling:**
+- If `GATEWAY_URL` environment variable is set, it will be used
+- Otherwise, the script automatically retrieves it from Terraform output
+- On first deployment (Gateway not deployed yet), frontend is built without URL
+- After Gateway is deployed, run the script again to rebuild frontend with correct URL
+
+### Deploy to Cloud Run
+
+After building images, deploy with Terraform:
+
+```bash
+cd infra
+terraform plan   # Review changes
+terraform apply  # Deploy services
+```
+
+**Note:** If you rebuild images with the same tag (`:latest`), Terraform won't detect changes. Use `scripts/update-cloud-run.sh` to update services directly.
+
+### Get Service URLs
+
+```bash
+cd infra
+terraform output gateway_service_url
+terraform output analyzer_service_url
+terraform output frontend_service_url
+```
+
+**See:** `infra/README.md` for Terraform setup and deployment details.
 
 **To verify telemetry:**
 - Check Pub/Sub topic: `sentinel-llm-telemetry`
@@ -337,7 +401,25 @@ We've configured **5 monitors** in Datadog for comprehensive alerting:
    - Configure notification channels
    - Save
 
-2. **Via API**:
+2. **Via API (Recommended)**:
+   Use the provided import script:
+   ```bash
+   # Set environment variables
+   export DD_API_KEY="your-api-key"
+   export DD_APP_KEY="your-app-key"  # Optional but recommended
+   export DD_SITE="datadoghq.com"    # Optional, defaults to datadoghq.com
+   
+   # Dry run to validate
+   node scripts/import-datadog-monitors.js --dry-run
+   
+   # Import all monitors
+   node scripts/import-datadog-monitors.js
+   
+   # Import specific monitor
+   node scripts/import-datadog-monitors.js --monitor llm-safety-score-critical
+   ```
+   
+   Or use curl manually:
    ```bash
    curl -X POST "https://api.datadoghq.com/api/v1/monitor" \
      -H "Content-Type: application/json" \
@@ -461,6 +543,8 @@ See `docs/INCIDENT_EXAMPLE.md` for detailed incident workflow examples.
 
 For a comprehensive overview of our observability approach, see:
 - `docs/ARCHITECTURE.md` - System architecture with APM tracing flow
+- `QUICK_TEST_APM.md` - Quick reference for APM testing
+- `docs/TROUBLESHOOTING.md` - Comprehensive troubleshooting guide
 - `docs/PERFORMANCE_BENCHMARKS.md` - Performance benchmarks and metrics
 - `docs/OBSERVABILITY_STRATEGY.md` - Overall strategy and architecture
 - `docs/DETECTION_RULES.md` - Detailed monitor documentation
@@ -666,6 +750,8 @@ After running benchmarks, check Datadog for comprehensive metrics:
    - Error rate trends
    - Token usage patterns
 3. **APM Traces**: View distributed traces to identify slow spans
+   - See `QUICK_TEST_APM.md` for testing instructions
+   - Test with traffic generator: `npm run traffic:generate -- --duration=1m --rate=5/s`
 4. **Monitors**: Check if any monitors fired during the test
 
 ### Continuous Benchmarking

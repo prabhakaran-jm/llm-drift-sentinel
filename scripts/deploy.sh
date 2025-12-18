@@ -79,22 +79,52 @@ docker push ${REPO_URL}/analyzer:latest
 # Get gateway URL from Terraform output or set manually
 GATEWAY_URL=${GATEWAY_URL:-""}
 if [ -z "$GATEWAY_URL" ]; then
-  echo "⚠️  Warning: GATEWAY_URL not set. Frontend will use relative API paths."
-  echo "   Set GATEWAY_URL environment variable to the Gateway Cloud Run URL"
+  echo ""
+  echo "📋 Attempting to get Gateway URL from Terraform..."
+  cd infra
+  GATEWAY_URL=$(terraform output -raw gateway_service_url 2>/dev/null || echo "")
+  cd ..
+  
+  if [ -z "$GATEWAY_URL" ]; then
+    echo "⚠️  Warning: Gateway URL not found in Terraform (Gateway may not be deployed yet)"
+    echo "   Frontend will be built without Gateway URL for initial deployment"
+    echo "   After Gateway is deployed, run this script again to rebuild frontend with correct URL"
+    echo "   Or set GATEWAY_URL environment variable manually"
+  else
+    echo "✅ Found Gateway URL: $GATEWAY_URL"
+  fi
 fi
 
 echo ""
 echo "🏗️  Building Frontend Docker image..."
+if [ -n "$GATEWAY_URL" ]; then
+  echo "   Using Gateway URL: $GATEWAY_URL"
 docker build -f web/client/Dockerfile --build-arg VITE_API_URL="${GATEWAY_URL}" -t ${REPO_URL}/frontend:latest .
+else
+  echo "   Building without Gateway URL (will use relative paths)"
+  docker build -f web/client/Dockerfile -t ${REPO_URL}/frontend:latest .
+fi
 docker push ${REPO_URL}/frontend:latest
 
 echo ""
 echo "✅ All Docker images built and pushed successfully!"
 echo ""
 echo "📝 Next steps:"
-echo "1. Run 'terraform apply' in the infra/ directory to deploy Cloud Run services"
-echo "2. Check outputs for service URLs:"
-echo "   terraform output gateway_service_url"
-echo "   terraform output frontend_service_url"
+echo ""
+echo "Option 1: Update Cloud Run services directly (recommended for code changes):"
+echo "   ./scripts/update-cloud-run.sh"
+echo ""
+echo "Option 2: Use Terraform (for infrastructure changes):"
+echo "   cd infra"
+echo "   terraform plan   # Review changes"
+echo "   terraform apply  # Deploy services"
+echo ""
+echo "⚠️  Note: Terraform won't detect image changes if using ':latest' tag."
+echo "   Use update-cloud-run.sh for quick updates after code changes."
+echo "   Use './scripts/update-cloud-run.sh' to update services with latest images."
+echo ""
+echo "Get service URLs:"
+echo "   cd infra && terraform output gateway_service_url"
+echo "   cd infra && terraform output frontend_service_url"
 echo ""
 

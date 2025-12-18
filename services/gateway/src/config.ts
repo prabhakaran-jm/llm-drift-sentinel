@@ -25,8 +25,9 @@ export function loadConfig(): Config {
     environment: process.env.ENVIRONMENT || 'dev',
     vertex: {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
-      location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-      model: process.env.VERTEX_MODEL || 'gemini-1.5-pro',
+      // Use VERTEX_LOCATION for Vertex AI (must be us-central1), fallback to GOOGLE_CLOUD_LOCATION for other services
+      location: process.env.VERTEX_LOCATION || process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+      model: process.env.VERTEX_MODEL || 'gemini-2.0-flash', // Will try multiple variants automatically
     },
     pubsub: {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',

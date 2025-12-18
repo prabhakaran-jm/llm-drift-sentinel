@@ -1,4 +1,5 @@
 import http from 'http';
+import tracer from 'dd-trace';
 import { loadConfig } from './config.js';
 import { PubSubConsumer } from './services/pubsubConsumer.js';
 import { BigQueryWriter } from './services/bigqueryWriter.js';
@@ -6,6 +7,15 @@ import { EmbeddingsClient } from './services/embeddingsClient.js';
 import { BaselineStore } from './services/baselineStore.js';
 import { SafetyClassifier } from './services/safetyClassifier.js';
 import { DatadogClient } from './services/datadogClient.js';
+
+// Initialize Datadog APM tracing
+tracer.init({
+  service: 'llm-sentinel-analyzer',
+  env: process.env.ENVIRONMENT || 'dev',
+  version: '1.0.0',
+  logInjection: true,
+  runtimeMetrics: true,
+});
 
 const config = loadConfig();
 
