@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 interface Message {
   id: string
@@ -19,12 +19,19 @@ interface LiveTickerProps {
 
 export default function LiveTicker({ messages, onLogClick }: LiveTickerProps) {
   const [logEntries, setLogEntries] = useState<Array<{ text: string; messageId?: string; sessionId?: string }>>([])
+  const loggedMessageIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    // Generate log entries from messages
+    // Only generate logs for new messages (not already logged)
     const newLogs: Array<{ text: string; messageId?: string; sessionId?: string }> = []
+    const loggedIds = loggedMessageIdsRef.current
     
     messages.forEach((msg) => {
+      // Skip if we've already logged this message
+      if (loggedIds.has(msg.id)) {
+        return
+      }
+      
       const timestamp = msg.timestamp.toISOString()
       const sessionId = msg.id.substring(0, 8)
       
@@ -34,6 +41,7 @@ export default function LiveTicker({ messages, onLogClick }: LiveTickerProps) {
           messageId: msg.id,
           sessionId,
         })
+        loggedIds.add(msg.id)
       } else if (msg.role === 'assistant') {
         if (msg.safetyScore !== undefined && msg.safetyScore < 0.5) {
           newLogs.push({
@@ -48,6 +56,7 @@ export default function LiveTicker({ messages, onLogClick }: LiveTickerProps) {
             sessionId,
           })
         }
+        loggedIds.add(msg.id)
         
         if (msg.safetyLabel === 'PROMPT_INJECTION' || msg.safetyLabel === 'JAILBREAK') {
           newLogs.push({
@@ -59,14 +68,17 @@ export default function LiveTicker({ messages, onLogClick }: LiveTickerProps) {
       }
     })
 
-    // Add system logs
-    if (messages.length > 0) {
+    // Add system log only once when first message arrives
+    if (messages.length > 0 && !loggedIds.has('__system_init__')) {
       newLogs.push({
         text: `[DEBUG] ${new Date().toISOString()} Tokenizer warm-up complete. Model loaded.`,
       })
+      loggedIds.add('__system_init__')
     }
 
-    setLogEntries((prev) => [...prev, ...newLogs].slice(-20)) // Keep last 20 logs
+    if (newLogs.length > 0) {
+      setLogEntries((prev) => [...prev, ...newLogs].slice(-20)) // Keep last 20 logs
+    }
   }, [messages])
 
   // Add periodic system logs
