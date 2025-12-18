@@ -114,6 +114,23 @@ export class DatadogClient {
         },
       ];
 
+      // Add processing time metrics if available
+      if ('processingTimeMs' in driftResult && typeof driftResult.processingTimeMs === 'number') {
+        metrics.push({
+          metric: 'sentinel.analyzer.drift_processing_time_ms',
+          points: [[timestamp, driftResult.processingTimeMs]],
+          tags,
+        });
+      }
+
+      if ('processingTimeMs' in safetyResult && typeof safetyResult.processingTimeMs === 'number') {
+        metrics.push({
+          metric: 'sentinel.analyzer.safety_processing_time_ms',
+          points: [[timestamp, safetyResult.processingTimeMs]],
+          tags,
+        });
+      }
+
       // Add error count if status is error
       if (event.status === 'error') {
         metrics.push({

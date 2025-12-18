@@ -16,6 +16,8 @@ export class EmbeddingsClient {
   private cache: Map<string, CacheEntry> = new Map();
   private readonly cacheTTL = 3600000; // 1 hour
   private readonly maxCacheSize = 1000; // Maximum cache entries
+  private cacheHits = 0;
+  private cacheMisses = 0;
 
   constructor(config: Config['vertex']) {
     this.vertexAI = new VertexAI({
@@ -54,11 +56,13 @@ export class EmbeddingsClient {
     const cached = this.cache.get(cacheKey);
 
     if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
+      this.cacheHits++;
       console.log('[Embeddings] Cache hit');
       return cached.embedding;
     }
 
     // Cache miss - compute embedding
+    this.cacheMisses++;
     // Try multiple model names and API formats
     const modelVariants = [
       this.model,
@@ -99,12 +103,23 @@ export class EmbeddingsClient {
   /**
    * Get cache statistics for monitoring
    */
-  getCacheStats(): { size: number; hitRate: number } {
-    // Note: hitRate would need to be tracked separately with counters
+  getCacheStats(): { size: number; hits: number; misses: number; hitRate: number } {
+    const total = this.cacheHits + this.cacheMisses;
+    const hitRate = total > 0 ? this.cacheHits / total : 0;
     return {
       size: this.cache.size,
-      hitRate: 0, // Would need to implement hit/miss tracking
+      hits: this.cacheHits,
+      misses: this.cacheMisses,
+      hitRate,
     };
+  }
+  
+  /**
+   * Reset cache statistics
+   */
+  resetCacheStats(): void {
+    this.cacheHits = 0;
+    this.cacheMisses = 0;
   }
 
   private async tryGetEmbedding(text: string, modelName: string): Promise<number[] | null> {

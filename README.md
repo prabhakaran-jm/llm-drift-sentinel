@@ -10,6 +10,8 @@ Monitor LLM applications on Vertex AI / Gemini. Detect drift and abuse, push met
 - Sentinel Analyzer consumes telemetry, computes drift and safety signals
 - Analyzer sends metrics and events to Datadog
 
+📊 **[View Detailed Architecture with APM Flow →](docs/ARCHITECTURE.md)**
+
 ## Tech Stack
 
 - **Backend**: TypeScript, Express, Vertex AI SDK
@@ -458,6 +460,8 @@ See `docs/INCIDENT_EXAMPLE.md` for detailed incident workflow examples.
 ### Observability Strategy
 
 For a comprehensive overview of our observability approach, see:
+- `docs/ARCHITECTURE.md` - System architecture with APM tracing flow
+- `docs/PERFORMANCE_BENCHMARKS.md` - Performance benchmarks and metrics
 - `docs/OBSERVABILITY_STRATEGY.md` - Overall strategy and architecture
 - `docs/DETECTION_RULES.md` - Detailed monitor documentation
 - `docs/INCIDENT_EXAMPLE.md` - Incident management examples
@@ -524,4 +528,161 @@ web/client/
 4. Start chatting with the LLM!
 
 The frontend automatically checks gateway health and displays connection status. All interactions are monitored by the analyzer service for drift and safety detection.
+
+## Performance Benchmarks
+
+We provide comprehensive performance benchmarks to validate system performance under load.
+
+### Running Benchmarks
+
+**Prerequisites:**
+- Gateway service running (`cd services/gateway && npm run dev`)
+- Analyzer service running (optional, for full metrics)
+- Datadog API keys configured (for metrics collection)
+
+**Run Load Test:**
+```bash
+cd scripts
+npm run traffic:generate -- --duration=5m --rate=20/s --concurrent=5
+```
+
+**Parameters:**
+- `--duration`: Test duration (e.g., `5m`, `10m`, `30s`)
+- `--rate`: Requests per second (e.g., `20/s`, `100/s`)
+- `--concurrent`: Concurrent workers (default: 1)
+- `--normal`: Percentage of normal prompts (default: 100%)
+- `--toxic`: Percentage of toxic prompts
+- `--jailbreak`: Percentage of jailbreak attempts
+- `--verbose`: Show detailed request logs
+
+**Example Benchmarks:**
+```bash
+# Standard load test
+npm run traffic:generate -- --duration=5m --rate=20/s
+
+# High load test
+npm run traffic:generate -- --duration=10m --rate=50/s --concurrent=10
+
+# Mixed traffic (realistic scenario)
+npm run traffic:generate -- --duration=5m --rate=20/s --normal=80% --toxic=15% --jailbreak=5%
+```
+
+### Metrics Captured
+
+The traffic generator outputs real-time statistics:
+
+**Request Metrics:**
+- Total requests
+- Success rate (%)
+- Error rate (%)
+- Latency (Average, P50, P95, P99)
+
+**Example Output:**
+```
+📊 Traffic Generation Complete
+
+Statistics:
+  Total Requests: 6000
+  Successful: 5700 (95.0%)
+  Errors: 300 (5.0%)
+  Latency:
+    Average: 1420ms
+    p50: 1250ms
+    p95: 2450ms
+    p99: 3200ms
+```
+
+### Datadog Metrics
+
+After running benchmarks, check Datadog for comprehensive metrics:
+
+**Gateway Metrics:**
+- `llm.request.count` - Request throughput
+- `llm.request.latency_ms` - Request latency (avg, p50, p95, p99)
+- `llm.request.error` - Error rate
+- `llm.tokens.input` - Input token usage
+- `llm.tokens.output` - Output token usage
+- `llm.tokens.total` - Total token usage
+
+**Analyzer Metrics:**
+- `sentinel.analyzer.events_processed` - Events processed per second
+- `sentinel.analyzer.drift_processing_time_ms` - Drift computation time
+- `sentinel.analyzer.safety_processing_time_ms` - Safety check time
+- `llm.drift.score` - Drift scores
+- `llm.safety.score` - Safety scores
+
+**Cache Performance:**
+- Embedding cache hit rate (logged in analyzer console)
+- Cache size (max 1000 entries)
+
+### Benchmark Results Template
+
+**Test Configuration:**
+- Duration: 5 minutes
+- Rate: 20 requests/second
+- Concurrent workers: 5
+- Traffic mix: 80% normal, 15% toxic, 5% jailbreak
+
+**Results:**
+
+| Metric | Value | Target |
+|--------|-------|--------|
+| **Throughput** | 20 req/s | ≥ 10 req/s |
+| **Success Rate** | 95% | ≥ 99% |
+| **Avg Latency** | 1420ms | < 2000ms |
+| **P50 Latency** | 1250ms | < 1500ms |
+| **P95 Latency** | 2450ms | < 3000ms |
+| **P99 Latency** | 3200ms | < 5000ms |
+| **Error Rate** | 5% | < 1% |
+| **Drift Processing** | 250ms avg | < 500ms |
+| **Safety Processing** | 180ms avg | < 300ms |
+| **Cache Hit Rate** | 65% | > 50% |
+
+### Interpreting Results
+
+**Latency Breakdown:**
+- **P50 (Median)**: Half of requests complete faster than this
+- **P95**: 95% of requests complete faster than this (handles outliers)
+- **P99**: 99% of requests complete faster than this (worst-case scenarios)
+
+**Performance Targets:**
+- **Throughput**: System should handle ≥ 10 req/s sustained load
+- **Latency**: P95 latency should be < 3s for good UX
+- **Error Rate**: Should be < 1% under normal conditions
+- **Cache Hit Rate**: Higher is better (reduces API calls to Vertex AI)
+
+**Bottlenecks:**
+- High latency → Check Vertex AI response times
+- High error rate → Check rate limits and API quotas
+- Low cache hit rate → Increase cache size or TTL
+- Slow drift processing → Optimize embedding computation
+
+### Viewing Results in Datadog
+
+1. **Open Datadog Dashboard**: Navigate to "LLM Sentinel Overview"
+2. **View Metrics**: Check widgets for:
+   - Request rate over time
+   - Latency percentiles
+   - Error rate trends
+   - Token usage patterns
+3. **APM Traces**: View distributed traces to identify slow spans
+4. **Monitors**: Check if any monitors fired during the test
+
+### Continuous Benchmarking
+
+For CI/CD integration, you can run benchmarks as part of your test suite:
+
+```bash
+# Run quick smoke test
+npm run traffic:generate -- --duration=30s --rate=10/s
+
+# Run full benchmark suite
+npm run traffic:generate -- --duration=5m --rate=20/s --concurrent=5
+```
+
+**Best Practices:**
+- Run benchmarks before major releases
+- Compare results across versions
+- Monitor for performance regressions
+- Document baseline performance metrics
 

@@ -74,10 +74,21 @@ export class PubSubConsumer {
       
       console.log(`[Consumer] Processing event ${event.requestId}`);
 
-      // Process in parallel
+      // Process in parallel with timing
+      const driftStart = Date.now();
+      const safetyStart = Date.now();
+      
       const [driftResult, safetyResult] = await Promise.all([
-        computeDrift(event, this.embeddingsClient, this.baselineStore),
-        checkSafety(event, this.safetyClassifier),
+        computeDrift(event, this.embeddingsClient, this.baselineStore).then(result => {
+          const driftTime = Date.now() - driftStart;
+          console.log(`[Consumer] Drift computation took ${driftTime}ms`);
+          return { ...result, processingTimeMs: driftTime };
+        }),
+        checkSafety(event, this.safetyClassifier).then(result => {
+          const safetyTime = Date.now() - safetyStart;
+          console.log(`[Consumer] Safety check took ${safetyTime}ms`);
+          return { ...result, processingTimeMs: safetyTime };
+        }),
       ]);
 
       // Detect anomalies in drift scores
