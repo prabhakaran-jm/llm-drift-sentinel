@@ -332,6 +332,31 @@ function ChatInterface() {
     }
   }
 
+  const handleFeedback = async (requestId: string, rating: 'positive' | 'negative') => {
+    try {
+      await fetch(getApiUrl('/api/feedback'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, rating }),
+      })
+      console.log(`[Feedback] Sent ${rating} for ${requestId}`)
+      
+      // Show brief visual feedback
+      const feedbackMsg: Message = {
+        id: `feedback-${Date.now()}`,
+        role: 'assistant',
+        content: `✓ Feedback recorded: ${rating === 'positive' ? 'Helpful' : 'Not helpful'}`,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, feedbackMsg])
+      setTimeout(() => {
+        setMessages((prev) => prev.filter(msg => msg.id !== feedbackMsg.id))
+      }, 2000)
+    } catch (err) {
+      console.error('[Feedback] Failed to send feedback', err)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -521,6 +546,7 @@ function ChatInterface() {
                 isFlagged={isSessionFlagged}
                 onFlagSession={handleFlagSession}
                 onNewSession={handleNewSession}
+                onFeedback={handleFeedback}
               />
               <InspectorPanel 
                 selectedMessage={selectedMessage} 

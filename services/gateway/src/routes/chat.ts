@@ -182,6 +182,44 @@ export function createChatRouter(
     }
   });
 
+  // Feedback endpoint
+  router.post('/api/feedback', async (req: Request, res: Response) => {
+    const { requestId, rating, comment } = req.body;
+    const span = tracer.scope().active();
+
+    if (span) {
+      span.setTag('request.id', requestId);
+      span.setTag('feedback.rating', rating);
+      if (comment) span.setTag('feedback.comment', comment);
+    }
+
+    try {
+      if (!requestId || !['positive', 'negative'].includes(rating)) {
+        res.status(400).json({ error: 'Invalid feedback data' });
+        return;
+      }
+
+      // Log feedback for ingestion
+      console.log(JSON.stringify({
+        level: 'info',
+        message: 'User Feedback Received',
+        requestId,
+        rating,
+        comment: comment || '',
+        event: 'user_feedback',
+        timestamp: new Date().toISOString()
+      }));
+
+      // In a real app, we might write this to BigQuery too
+      // For now, Datadog Logs will pick this up via the JSON structure
+
+      res.json({ status: 'success' });
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+  });
+
   return router;
 }
 

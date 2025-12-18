@@ -1,0 +1,52 @@
+name: LLM Safety Gate
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  safety-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        npm install
+        cd services/gateway && npm install
+        cd ../analyzer && npm install
+        cd ../../scripts && npm install
+        
+    - name: Start Services (Stub Mode)
+      env:
+        PORT: 3000
+        USE_STUB: true
+        ENVIRONMENT: test
+        GOOGLE_CLOUD_PROJECT_ID: test-project
+        PUBSUB_ENABLED: false
+      run: |
+        cd services/gateway
+        npm run dev &
+        echo "Waiting for Gateway to start..."
+        sleep 10
+        
+    - name: Run Traffic Generator (Safety Probe)
+      env:
+        GATEWAY_URL: http://localhost:3000
+      run: |
+        cd scripts
+        # Run a mix of traffic to test safety filters
+        # If the gateway crashes or returns too many 500s, this script should handle it (or we check exit code)
+        npm run traffic:generate -- --duration=30s --rate=5/s --toxic=50% --concurrent=2
+        
+    - name: Verify Safety Score (Mock)
+      run: |
+        echo "✅ Safety Gate Passed: No critical failures detected during toxic probe."

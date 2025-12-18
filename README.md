@@ -58,6 +58,24 @@ PUBSUB_TOPIC_NAME=sentinel-llm-telemetry
 PUBSUB_ENABLED=true
 ```
 
+**Frontend Environment Variables (for build-time):**
+
+For the frontend, create `.env` file in `web/client/` or set build-time variables:
+```bash
+# Gateway API URL (required for production)
+VITE_API_URL=https://your-gateway-url.run.app
+
+# Datadog RUM (optional - for frontend monitoring)
+VITE_DD_APPLICATION_ID=your-datadog-rum-application-id
+VITE_DD_CLIENT_TOKEN=your-datadog-rum-client-token
+VITE_DD_SITE=datadoghq.com
+
+# Environment
+VITE_ENVIRONMENT=dev
+```
+
+**Note:** Frontend environment variables must be prefixed with `VITE_` and are baked into the build. Set them before running `npm run build` or in your Docker build process.
+
 **Stub Mode**: Set `USE_STUB=true` to test without Vertex AI enabled. This returns mock responses.
 
 **Real Vertex AI**: Set `USE_STUB=false` and ensure:

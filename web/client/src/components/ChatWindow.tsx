@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 
 // Drift Sparkline Component
 function DriftSparkline({ driftScore }: { driftScore?: number }) {
@@ -77,6 +77,7 @@ interface ChatWindowProps {
   isFlagged?: boolean
   onFlagSession?: () => void
   onNewSession?: () => void
+  onFeedback?: (requestId: string, rating: 'positive' | 'negative') => void
 }
 
 export default function ChatWindow({ 
@@ -88,13 +89,21 @@ export default function ChatWindow({
   sessionId,
   isFlagged,
   onFlagSession,
-  onNewSession
+  onNewSession,
+  onFeedback
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [feedbackState, setFeedbackState] = useState<Record<string, 'positive' | 'negative'>>({})
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const handleFeedbackClick = (requestId: string, rating: 'positive' | 'negative') => {
+    if (feedbackState[requestId]) return
+    setFeedbackState(prev => ({ ...prev, [requestId]: rating }))
+    onFeedback?.(requestId, rating)
+  }
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -312,6 +321,27 @@ export default function ChatWindow({
                       <div className="flex items-center gap-2 dark:text-white/50 text-slate-500">
                         <span className="text-[10px] uppercase font-bold dark:text-white/30 text-slate-400 tracking-wider">Status</span>
                         <span className="text-xs italic">⏳ Building baseline...</span>
+                      </div>
+                    </>
+                  )}
+                  {message.requestId && (
+                    <>
+                      <div className="flex-1"></div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleFeedbackClick(message.requestId!, 'positive') }}
+                          className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${feedbackState[message.requestId!] === 'positive' ? 'text-[#10b981] bg-[#10b981]/10' : 'dark:text-white/30 text-slate-400 hover:text-[#10b981]'}`}
+                          title="Helpful"
+                        >
+                          <span className={`material-symbols-outlined text-[18px] ${feedbackState[message.requestId!] === 'positive' ? 'font-bold' : ''}`}>thumb_up</span>
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleFeedbackClick(message.requestId!, 'negative') }}
+                          className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${feedbackState[message.requestId!] === 'negative' ? 'text-[#ef4444] bg-[#ef4444]/10' : 'dark:text-white/30 text-slate-400 hover:text-[#ef4444]'}`}
+                          title="Not Helpful"
+                        >
+                          <span className={`material-symbols-outlined text-[18px] ${feedbackState[message.requestId!] === 'negative' ? 'font-bold' : ''}`}>thumb_down</span>
+                        </button>
                       </div>
                     </>
                   )}
