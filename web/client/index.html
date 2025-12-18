@@ -4,9 +4,66 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LLM Drift & Abuse Sentinel</title>
+    <title>LLM Sentinel Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#facc15",
+              "alert": "#ef4444",
+              "success": "#10b981",
+              "deep-black": "#0c0c0c",
+              "slate-grey": "#1a1a1a",
+              "surface-dark": "#18181b",
+            },
+            fontFamily: {
+              "sans": ["Inter", "sans-serif"],
+              "mono": ["JetBrains Mono", "ui-monospace", "monospace"]
+            },
+            borderRadius: { "DEFAULT": "0.5rem", "lg": "0.75rem", "xl": "1rem", "2xl": "1.5rem", "full": "9999px" },
+          },
+        },
+      }
+    </script>
+    <style>
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0c0c0c; 
+      }
+      .light ::-webkit-scrollbar-track {
+        background: #f5f5f5;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #27272a; 
+        border-radius: 3px;
+      }
+      .light ::-webkit-scrollbar-thumb {
+        background: #d4d4d4;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3f3f46; 
+      }
+      .light ::-webkit-scrollbar-thumb:hover {
+        background: #a3a3a3;
+      }
+      @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-100%); }
+      }
+      .animate-\\[marquee_60s_linear_infinite\\] {
+        animation: marquee 60s linear infinite;
+      }
+    </style>
   </head>
-  <body>
+  <body class="dark:bg-[#0c0c0c] bg-slate-50 dark:text-white text-slate-900 font-sans h-screen flex flex-col overflow-hidden selection:bg-[#facc15] selection:text-black">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

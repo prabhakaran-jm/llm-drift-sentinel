@@ -1,49 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import ChatInterface from './components/ChatInterface'
-import StatusBar from './components/StatusBar'
-import './App.css'
-
-interface HealthStatus {
-  status: string
-  mode: string
-  telemetry: string
-}
+import { useTheme } from './hooks/useTheme'
 
 function App() {
-  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { theme } = useTheme()
 
+  // Ensure theme is applied on mount
   useEffect(() => {
-    checkHealth()
-    // Poll health every 30 seconds
-    const interval = setInterval(checkHealth, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const checkHealth = async () => {
-    try {
-      const response = await fetch('/api/health')
-      if (response.ok) {
-        const data = await response.json()
-        setHealthStatus(data)
-      }
-    } catch (error) {
-      console.error('Health check failed:', error)
-    } finally {
-      setIsLoading(false)
+    const root = document.documentElement
+    if (theme === 'dark') {
+      root.classList.add('dark')
+      root.classList.remove('light')
+    } else {
+      root.classList.add('light')
+      root.classList.remove('dark')
     }
-  }
+  }, [theme])
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>LLM Drift & Abuse Sentinel</h1>
-        <p className="subtitle">Monitor and detect drift and abuse in LLM applications</p>
-      </header>
-      <StatusBar healthStatus={healthStatus} isLoading={isLoading} />
-      <main className="app-main">
-        <ChatInterface />
-      </main>
+    <div className="h-screen w-screen overflow-hidden">
+      <ChatInterface />
     </div>
   )
 }

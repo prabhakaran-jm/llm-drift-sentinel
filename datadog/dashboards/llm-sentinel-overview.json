@@ -426,19 +426,7 @@
         ],
         "precision": 0,
         "text_align": "center",
-        "custom_unit": "anomalies",
-        "conditional_formats": [
-          {
-            "comparator": ">",
-            "value": 0,
-            "palette": "white_on_red"
-          },
-          {
-            "comparator": "=",
-            "value": 0,
-            "palette": "white_on_green"
-          }
-        ]
+        "custom_unit": "anomalies"
       },
       "layout": {
         "x": 47,

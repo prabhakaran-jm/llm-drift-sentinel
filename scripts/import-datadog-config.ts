@@ -153,6 +153,58 @@ async function importDashboard(
 
     const url = getApiUrl(config.site, '/api/v1/dashboard');
     
+    // First, try to find existing dashboard by title
+    try {
+      const listUrl = getApiUrl(config.site, '/api/v1/dashboard');
+      const listResponse = await axios.get(listUrl, {
+        params: {
+          filter: 'all',
+        },
+        headers: {
+          'DD-API-KEY': config.apiKey,
+          'DD-APPLICATION-KEY': config.appKey,
+        },
+      });
+
+      // Datadog API returns dashboards in different formats, check both
+      const dashboards = listResponse.data?.dashboards || listResponse.data || [];
+      const existingDashboard = Array.isArray(dashboards)
+        ? dashboards.find((d: any) => d.title === dashboardTitle)
+        : null;
+
+      if (existingDashboard) {
+        // Update existing dashboard - include the ID in the JSON
+        const dashboardId = existingDashboard.id;
+        const updateUrl = `${url}/${dashboardId}`;
+        
+        // Preserve the dashboard ID in the JSON for update
+        const dashboardToUpdate = { ...dashboardJson };
+        
+        const response = await axios.put(
+          updateUrl,
+          dashboardToUpdate,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'DD-API-KEY': config.apiKey,
+              'DD-APPLICATION-KEY': config.appKey,
+            },
+          }
+        );
+
+        console.log(`    🔄 Updated existing dashboard`);
+        return {
+          success: true,
+          name: dashboardTitle,
+          id: dashboardId?.toString() || response.data.id?.toString(),
+        };
+      }
+    } catch (listError) {
+      // If listing fails, continue with create
+      // This is expected if no dashboards exist yet
+    }
+    
+    // Create new dashboard if not found
     const response = await axios.post(
       url,
       dashboardJson,

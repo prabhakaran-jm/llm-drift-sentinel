@@ -113,10 +113,39 @@ export function createChatRouter(
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const latencyMs = Date.now() - startTime;
 
+      // Check for rate limit errors (429)
+      let httpStatus = 500;
+      let errorType = 'server_error';
+      let userFriendlyMessage = 'Failed to process chat request';
+      
+      // Check if it's a Vertex AI ClientError with 429 status
+      if (error && typeof error === 'object' && 'status' in error) {
+        const statusCode = (error as any).status;
+        if (statusCode === 429) {
+          httpStatus = 429;
+          errorType = 'rate_limit';
+          userFriendlyMessage = 'Rate limit exceeded';
+          errorMessage = 'Vertex AI rate limit exceeded. Please try again in a few moments.';
+          span?.setTag('error.rate_limit', true);
+        }
+      }
+      
+      // Also check error message for 429 indicators
+      if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+        httpStatus = 429;
+        errorType = 'rate_limit';
+        userFriendlyMessage = 'Rate limit exceeded';
+        if (!errorMessage.includes('try again')) {
+          errorMessage = 'Vertex AI rate limit exceeded. Please try again in a few moments.';
+        }
+        span?.setTag('error.rate_limit', true);
+      }
+
       // Set APM trace tags for error
       span?.setTag('error', true);
       span?.setTag('error.message', errorMessage);
       span?.setTag('error.type', error instanceof Error ? error.constructor.name : 'Unknown');
+      span?.setTag('error.http_status', httpStatus);
 
       console.error('Chat error:', error);
 
@@ -143,10 +172,12 @@ export function createChatRouter(
 
       await telemetryPublisher.publish(telemetryEvent);
 
-      res.status(500).json({
+      res.status(httpStatus).json({
         requestId,
-        error: 'Failed to process chat request',
+        error: userFriendlyMessage,
         details: errorMessage,
+        errorType,
+        ...(httpStatus === 429 && { retryAfter: 60 }), // Suggest retry after 60 seconds
       });
     }
   });
