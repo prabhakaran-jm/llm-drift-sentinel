@@ -370,6 +370,84 @@
       }
     },
     {
+      "id": 16,
+      "definition": {
+        "type": "timeseries",
+        "title": "Anomaly Detection - Z-Score Trends",
+        "requests": [
+          {
+            "q": "avg:llm.drift.z_score{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "max:llm.drift.z_score{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "dashed",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Z-Score (std dev)",
+          "scale": "linear"
+        },
+        "markers": [
+          {
+            "value": "3",
+            "display_type": "error dashed",
+            "label": "Anomaly Threshold (3σ)"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 60,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 17,
+      "definition": {
+        "type": "query_value",
+        "title": "Anomalies Detected (Last Hour)",
+        "requests": [
+          {
+            "q": "sum:llm.drift.anomaly{*}.as_count()",
+            "aggregator": "sum"
+          }
+        ],
+        "precision": 0,
+        "text_align": "center",
+        "custom_unit": "anomalies",
+        "conditional_formats": [
+          {
+            "comparator": ">",
+            "value": 0,
+            "palette": "white_on_red"
+          },
+          {
+            "comparator": "=",
+            "value": 0,
+            "palette": "white_on_green"
+          }
+        ]
+      },
+      "layout": {
+        "x": 47,
+        "y": 60,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
       "id": 12,
       "definition": {
         "type": "toplist",
@@ -382,8 +460,36 @@
       },
       "layout": {
         "x": 0,
-        "y": 60,
+        "y": 75,
         "width": 31,
+        "height": 15
+      }
+    },
+    {
+      "id": 18,
+      "definition": {
+        "type": "timeseries",
+        "title": "Anomaly Rate Over Time",
+        "requests": [
+          {
+            "q": "sum:llm.drift.anomaly{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Anomalies/sec",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 62,
+        "y": 60,
+        "width": 32,
         "height": 15
       }
     },
@@ -400,7 +506,7 @@
       },
       "layout": {
         "x": 31,
-        "y": 60,
+        "y": 75,
         "width": 31,
         "height": 15
       }
@@ -415,7 +521,7 @@
       },
       "layout": {
         "x": 62,
-        "y": 60,
+        "y": 75,
         "width": 32,
         "height": 15
       }
@@ -431,7 +537,7 @@
       },
       "layout": {
         "x": 0,
-        "y": 75,
+        "y": 90,
         "width": 94,
         "height": 20
       }

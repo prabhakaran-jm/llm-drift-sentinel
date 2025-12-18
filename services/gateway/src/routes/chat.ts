@@ -5,6 +5,7 @@ import { VertexClient } from '../vertexClient.js';
 import { TelemetryPublisher } from '../services/telemetryPublisher.js';
 import { TelemetryEvent } from '../types/telemetry.js';
 import { Config } from '../config.js';
+import { calculateDemoScores } from '../utils/demoScorer.js';
 
 export function createChatRouter(
   vertexClient: VertexClient,
@@ -59,12 +60,18 @@ export function createChatRouter(
       const response = await vertexClient.chatCompletion(sanitizedMessage);
       const latencyMs = Date.now() - startTime;
 
+      // Calculate demo scores for frontend visualization
+      const demoScores = calculateDemoScores(sanitizedMessage, response.text);
+
       // Set APM trace tags for successful response
       span?.setTag('llm.tokens.in', response.tokensIn);
       span?.setTag('llm.tokens.out', response.tokensOut);
       span?.setTag('llm.tokens.total', response.tokensIn + response.tokensOut);
       span?.setTag('llm.latency_ms', latencyMs);
       span?.setTag('llm.response.length', response.text.length);
+      span?.setTag('llm.safety.score', demoScores.safetyScore);
+      span?.setTag('llm.safety.label', demoScores.safetyLabel);
+      span?.setTag('llm.drift.score', demoScores.driftScore);
 
       const telemetryEvent: TelemetryEvent = {
         requestId,
@@ -95,6 +102,11 @@ export function createChatRouter(
         tokensOut: response.tokensOut,
         modelName: response.modelName,
         modelVersion: response.modelVersion,
+        // Add safety and drift scores for frontend visualization
+        safetyScore: demoScores.safetyScore,
+        safetyLabel: demoScores.safetyLabel,
+        driftScore: demoScores.driftScore,
+        baselineReady: demoScores.baselineReady,
       });
     } catch (error) {
       status = 'error';

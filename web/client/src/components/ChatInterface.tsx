@@ -9,6 +9,10 @@ interface Message {
   tokensIn?: number
   tokensOut?: number
   modelName?: string
+  safetyScore?: number
+  safetyLabel?: 'CLEAN' | 'TOXIC' | 'PII' | 'JAILBREAK' | 'PROMPT_INJECTION' | 'RISKY'
+  driftScore?: number
+  baselineReady?: boolean
 }
 
 interface ChatResponse {
@@ -18,6 +22,10 @@ interface ChatResponse {
   tokensOut: number
   modelName: string
   modelVersion: string
+  safetyScore?: number
+  safetyLabel?: 'CLEAN' | 'TOXIC' | 'PII' | 'JAILBREAK' | 'PROMPT_INJECTION' | 'RISKY'
+  driftScore?: number
+  baselineReady?: boolean
 }
 
 function ChatInterface() {
@@ -76,6 +84,10 @@ function ChatInterface() {
         tokensIn: data.tokensIn,
         tokensOut: data.tokensOut,
         modelName: data.modelName,
+        safetyScore: data.safetyScore,
+        safetyLabel: data.safetyLabel,
+        driftScore: data.driftScore,
+        baselineReady: data.baselineReady,
       }
 
       setMessages((prev) => [...prev, assistantMessage])
@@ -114,14 +126,32 @@ function ChatInterface() {
                 </span>
               </div>
               <div className="message-text">{message.content}</div>
-              {message.role === 'assistant' && message.modelName && (
+              {message.role === 'assistant' && (
                 <div className="message-meta">
-                  <span>Model: {message.modelName}</span>
+                  {message.modelName && <span>Model: {message.modelName}</span>}
                   {message.tokensIn !== undefined && message.tokensOut !== undefined && (
                     <span>
                       Tokens: {message.tokensIn} in / {message.tokensOut} out
                     </span>
                   )}
+                  {/* Safety and Drift Indicators */}
+                  <div className="safety-drift-indicators">
+                    {message.safetyScore !== undefined && (
+                      <div className={`safety-indicator safety-${message.safetyLabel?.toLowerCase() || 'clean'}`} title={`Safety: ${message.safetyLabel || 'CLEAN'} (${(message.safetyScore * 100).toFixed(0)}%)`}>
+                        <span className="indicator-icon">🛡️</span>
+                        <span className="indicator-label">Safety</span>
+                        <span className="indicator-value">{(message.safetyScore * 100).toFixed(0)}%</span>
+                      </div>
+                    )}
+                    {message.driftScore !== undefined && (
+                      <div className={`drift-indicator drift-${message.driftScore > 0.3 ? 'high' : message.driftScore > 0.15 ? 'medium' : 'low'}`} title={`Drift: ${(message.driftScore * 100).toFixed(0)}%${message.baselineReady ? '' : ' (baseline building...)'}`}>
+                        <span className="indicator-icon">📊</span>
+                        <span className="indicator-label">Drift</span>
+                        <span className="indicator-value">{(message.driftScore * 100).toFixed(0)}%</span>
+                        {!message.baselineReady && <span className="baseline-building">⏳</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
