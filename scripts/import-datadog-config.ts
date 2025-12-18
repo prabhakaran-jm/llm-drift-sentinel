@@ -35,6 +35,7 @@ interface ImportResult {
   name: string;
   id?: string;
   error?: string;
+  skipped?: boolean;
 }
 
 function loadConfig(): Config {
@@ -279,6 +280,7 @@ async function importAll(): Promise<void> {
         success: false,
         name: path.basename(monitorPath, '.json'),
         error: 'SLO monitors require different API endpoint - create manually',
+        skipped: true,
       });
       continue;
     }
@@ -315,16 +317,27 @@ async function importAll(): Promise<void> {
   // Summary
   console.log('\n📋 Import Summary\n');
   const successful = results.filter(r => r.success);
-  const failed = results.filter(r => !r.success);
+  const failed = results.filter(r => !r.success && !r.skipped);
+  const skipped = results.filter(r => r.skipped);
 
-  console.log(`✅ Successful: ${successful.length}/${results.length}`);
+  const totalProcessed = successful.length + failed.length;
+  const totalItems = results.length;
+
+  console.log(`✅ Successful: ${successful.length}${totalProcessed > 0 ? `/${totalProcessed}` : ''}`);
   successful.forEach(r => {
     console.log(`   - ${r.name}${r.id ? ` (ID: ${r.id})` : ''}`);
   });
 
   if (failed.length > 0) {
-    console.log(`\n❌ Failed: ${failed.length}/${results.length}`);
+    console.log(`\n❌ Failed: ${failed.length}${totalProcessed > 0 ? `/${totalProcessed}` : ''}`);
     failed.forEach(r => {
+      console.log(`   - ${r.name}: ${r.error}`);
+    });
+  }
+
+  if (skipped.length > 0) {
+    console.log(`\n⏭️  Skipped: ${skipped.length}`);
+    skipped.forEach(r => {
       console.log(`   - ${r.name}: ${r.error}`);
     });
   }

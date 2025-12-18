@@ -4,6 +4,8 @@ import { TelemetryEvent } from '../types/telemetry.js';
 import { DriftResult } from '../engines/driftEngine.js';
 import { SafetyResult } from '../engines/safetyEngine.js';
 import { AnomalyResult } from '../engines/anomalyEngine.js';
+import { CostOptimizer } from '../engines/costOptimizer.js';
+import { PatternDetectionResult } from '../engines/patternEngine.js';
 
 export class DatadogClient {
   private metricsApi: v1.MetricsApi;
@@ -180,6 +182,134 @@ export class DatadogClient {
     }
   }
 
+  /**
+   * Emit cost optimization metrics
+   */
+  async emitCostMetrics(event: TelemetryEvent, costOptimizer: CostOptimizer): Promise<void> {
+    if (!this.enabled) {
+      return;
+    }
+
+    try {
+      const timestamp = Math.floor(new Date(event.timestamp).getTime() / 1000);
+      const tags = this.buildTags(event, { safetyLabel: 'CLEAN', safetyScore: 1.0, isHighRisk: false });
+
+      // Calculate cost per request
+      const costPerRequest = costOptimizer.getCostPerRequest(event);
+
+      // Get cost analysis (periodically, not every request)
+      const analysis = costOptimizer.analyzeCosts();
+
+      const metrics: v1.Series[] = [
+        {
+          metric: 'llm.cost.per_request',
+          points: [[timestamp, costPerRequest]],
+          tags,
+        },
+        {
+          metric: 'llm.cost.monthly_estimated',
+          points: [[timestamp, analysis.currentCost]],
+          tags: [...tags, 'type:current'],
+        },
+        {
+          metric: 'llm.cost.monthly_estimated',
+          points: [[timestamp, analysis.projectedCost]],
+          tags: [...tags, 'type:projected'],
+        },
+        {
+          metric: 'llm.cost.recommendations.count',
+          points: [[timestamp, analysis.recommendations.length]],
+          tags: [...tags, `priority:high`],
+        },
+      ];
+
+      // Emit recommendation metrics (only high-priority ones to avoid spam)
+      for (const rec of analysis.recommendations.filter(r => r.priority === 'high').slice(0, 3)) {
+        metrics.push({
+          metric: 'llm.cost.recommendation.savings',
+          points: [[timestamp, rec.estimatedSavings]],
+          tags: [
+            ...tags,
+            `recommendation_type:${rec.type}`,
+            `priority:${rec.priority}`,
+            rec.model ? `model:${rec.model}` : '',
+            rec.alternativeModel ? `alternative_model:${rec.alternativeModel}` : '',
+          ].filter(Boolean),
+        });
+      }
+
+      // Emit cache hit rate if available
+      if (analysis.cacheHitRate !== undefined) {
+        metrics.push({
+          metric: 'llm.cache.hit_rate',
+          points: [[timestamp, analysis.cacheHitRate]],
+          tags,
+        });
+      }
+
+      await this.metricsApi.submitMetrics({
+        body: {
+          series: metrics,
+        },
+      });
+
+      console.log(`[Datadog] Emitted ${metrics.length} cost metrics for ${event.requestId}`);
+    } catch (error: any) {
+      console.error(`[Datadog] Failed to emit cost metrics for ${event.requestId}:`, error.message);
+      // Don't throw - metrics failures shouldn't break processing
+    }
+  }
+
+  /**
+   * Emit cache performance metrics
+   */
+  async emitCacheMetrics(
+    cacheStats: { size: number; hits: number; misses: number; hitRate: number }
+  ): Promise<void> {
+    if (!this.enabled) {
+      return;
+    }
+
+    try {
+      const timestamp = Math.floor(Date.now() / 1000);
+      const tags = [`env:${this.environment}`, 'service:sentinel-analyzer'];
+
+      const metrics: v1.Series[] = [
+        {
+          metric: 'llm.cache.hits',
+          points: [[timestamp, cacheStats.hits]],
+          tags,
+        },
+        {
+          metric: 'llm.cache.misses',
+          points: [[timestamp, cacheStats.misses]],
+          tags,
+        },
+        {
+          metric: 'llm.cache.hit_rate',
+          points: [[timestamp, cacheStats.hitRate]],
+          tags,
+        },
+        {
+          metric: 'llm.cache.size',
+          points: [[timestamp, cacheStats.size]],
+          tags,
+        },
+      ];
+
+      await this.metricsApi.submitMetrics({
+        body: {
+          series: metrics,
+        },
+      });
+
+      console.log(`[Datadog] Emitted cache metrics: ${cacheStats.hits} hits, ${cacheStats.misses} misses, ${(cacheStats.hitRate * 100).toFixed(1)}% hit rate`);
+    } catch (error: any) {
+      console.error(`[Datadog] Failed to emit cache metrics:`, error.message);
+      // Don't throw - metrics failures shouldn't break processing
+    }
+  }
+
   async emitSafetyEvent(event: TelemetryEvent, safetyResult: SafetyResult): Promise<void> {
     if (!this.enabled || !safetyResult.isHighRisk) {
       return;
@@ -214,6 +344,56 @@ export class DatadogClient {
       console.log(`[Datadog] Emitted safety event for ${event.requestId}: ${safetyResult.safetyLabel}`);
     } catch (error: any) {
       console.error(`[Datadog] Failed to emit safety event for ${event.requestId}:`, error.message);
+    }
+  }
+
+  /**
+   * Emit pattern detection event for attack campaigns
+   */
+  async emitPatternEvent(event: TelemetryEvent, pattern: PatternDetectionResult): Promise<void> {
+    if (!this.enabled || !pattern.patternDetected) {
+      return;
+    }
+
+    try {
+      const title = `🚨 Attack Campaign Detected: ${pattern.patternType}`;
+      const text = `**Pattern Type:** ${pattern.patternType}
+**Confidence:** ${(pattern.confidence * 100).toFixed(1)}%
+**Affected Requests:** ${pattern.affectedRequests}
+**Time Window:** ${pattern.timeWindow}s
+**Details:** ${pattern.details}
+
+**First Seen:** ${pattern.firstSeen}
+**Last Seen:** ${pattern.lastSeen}
+
+**Sample Request IDs:** ${pattern.requestIds.slice(0, 5).join(', ')}${pattern.requestIds.length > 5 ? ` (+${pattern.requestIds.length - 5} more)` : ''}
+
+**Current Request:** ${event.requestId}
+**Endpoint:** ${event.endpoint}
+**Model:** ${event.modelName}
+**Environment:** ${this.environment}
+
+⚠️ **Action Required:** Review affected requests and consider rate limiting or blocking suspicious sources.`;
+
+      await this.eventsApi.createEvent({
+        body: {
+          title,
+          text,
+          alertType: pattern.confidence > 0.7 ? 'error' : 'warning',
+          tags: [
+            ...this.buildTags(event, { safetyLabel: 'CLEAN', safetyScore: 1.0, isHighRisk: false }),
+            `pattern_type:${pattern.patternType}`,
+            `pattern_confidence:${pattern.confidence.toFixed(2)}`,
+            `affected_requests:${pattern.affectedRequests}`,
+          ],
+          sourceTypeName: 'sentinel-pattern',
+          priority: pattern.confidence > 0.8 ? 'normal' : 'low',
+        },
+      });
+
+      console.log(`[Datadog] Emitted pattern event: ${pattern.patternType} (confidence: ${(pattern.confidence * 100).toFixed(1)}%)`);
+    } catch (error: any) {
+      console.error(`[Datadog] Failed to emit pattern event for ${event.requestId}:`, error.message);
     }
   }
 

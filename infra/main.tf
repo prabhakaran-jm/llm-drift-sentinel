@@ -224,3 +224,56 @@ resource "google_bigquery_table" "telemetry_events" {
   depends_on = [google_bigquery_dataset.telemetry]
 }
 
+# BigQuery table for drift baselines
+resource "google_bigquery_table" "drift_baselines" {
+  dataset_id = google_bigquery_dataset.telemetry.dataset_id
+  table_id   = "drift_baselines"
+  project    = var.project_id
+
+  description = "Drift detection baselines per endpoint"
+
+  schema = jsonencode([
+    {
+      name = "endpoint"
+      type = "STRING"
+      mode = "REQUIRED"
+    },
+    {
+      name = "embedding"
+      type = "FLOAT"
+      mode = "REPEATED"
+      description = "Baseline embedding vector (768 dimensions)"
+    },
+    {
+      name = "sampleCount"
+      type = "INTEGER"
+      mode = "REQUIRED"
+      description = "Number of samples used to build baseline"
+    },
+    {
+      name = "lastUpdated"
+      type = "TIMESTAMP"
+      mode = "REQUIRED"
+      description = "Last time baseline was updated"
+    },
+    {
+      name = "createdAt"
+      type = "TIMESTAMP"
+      mode = "REQUIRED"
+      description = "When baseline was first created"
+    },
+  ])
+
+  # Clustering by endpoint for faster lookups
+  clustering = ["endpoint"]
+
+  labels = {
+    environment = var.environment
+    service     = "sentinel"
+  }
+
+  deletion_protection = false
+
+  depends_on = [google_bigquery_dataset.telemetry]
+}
+

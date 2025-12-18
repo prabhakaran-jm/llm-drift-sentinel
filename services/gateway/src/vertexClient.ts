@@ -50,9 +50,7 @@ export class VertexClient {
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      systemInstruction: {
-        parts: [{ text: systemInstruction }],
-      },
+      systemInstruction: systemInstruction,
     });
 
     const response = result.response;

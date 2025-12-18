@@ -12,6 +12,7 @@ export interface Config {
     projectId: string;
     datasetId: string;
     tableId: string;
+    baselineTableId: string;
     enabled: boolean;
   };
   vertex: {
@@ -39,6 +40,7 @@ export function loadConfig(): Config {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || '',
       datasetId: process.env.BIGQUERY_DATASET_ID || 'sentinel_telemetry',
       tableId: process.env.BIGQUERY_TABLE_ID || 'llm_events',
+      baselineTableId: process.env.BIGQUERY_BASELINE_TABLE_ID || 'drift_baselines',
       enabled: process.env.BIGQUERY_ENABLED !== 'false',
     },
     vertex: {

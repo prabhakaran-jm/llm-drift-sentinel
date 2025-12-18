@@ -48,3 +48,23 @@ output "pubsub_subscription_id" {
   value       = google_pubsub_subscription.analyzer_sub.id
 }
 
+output "artifact_registry_repository" {
+  description = "Artifact Registry repository for Docker images"
+  value       = google_artifact_registry_repository.docker_repo.id
+}
+
+output "gateway_service_url" {
+  description = "Cloud Run Gateway service URL"
+  value       = google_cloud_run_service.gateway.status[0].url
+}
+
+output "analyzer_service_url" {
+  description = "Cloud Run Analyzer service URL"
+  value       = google_cloud_run_service.analyzer.status[0].url
+}
+
+output "frontend_service_url" {
+  description = "Cloud Run Frontend service URL"
+  value       = google_cloud_run_service.frontend.status[0].url
+}
+

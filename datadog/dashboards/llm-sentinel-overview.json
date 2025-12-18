@@ -160,6 +160,202 @@
       }
     },
     {
+      "id": 19,
+      "definition": {
+        "type": "timeseries",
+        "title": "Cost Optimization - Monthly Estimates",
+        "requests": [
+          {
+            "q": "avg:llm.cost.monthly_estimated{type:current}",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:llm.cost.monthly_estimated{type:projected}",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "dashed",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "USD/month",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 90,
+        "width": 31,
+        "height": 15
+      }
+    },
+    {
+      "id": 20,
+      "definition": {
+        "type": "query_value",
+        "title": "Potential Monthly Savings",
+        "requests": [
+          {
+            "q": "avg:llm.cost.monthly_estimated{type:current} - avg:llm.cost.monthly_estimated{type:projected}",
+            "aggregator": "avg"
+          }
+        ],
+        "precision": 2,
+        "text_align": "center",
+        "custom_unit": "USD",
+        "autoscale": true
+      },
+      "layout": {
+        "x": 31,
+        "y": 90,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
+      "id": 21,
+      "definition": {
+        "type": "query_value",
+        "title": "High-Priority Recommendations",
+        "requests": [
+          {
+            "q": "sum:llm.cost.recommendations.count{priority:high}",
+            "aggregator": "sum"
+          }
+        ],
+        "precision": 0,
+        "text_align": "center",
+        "custom_unit": "recommendations"
+      },
+      "layout": {
+        "x": 46,
+        "y": 90,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
+      "id": 22,
+      "definition": {
+        "type": "timeseries",
+        "title": "Cache Hit Rate",
+        "requests": [
+          {
+            "q": "avg:llm.cache.hit_rate{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Hit Rate (0-1)",
+          "scale": "linear",
+          "min": "0",
+          "max": "1"
+        },
+        "markers": [
+          {
+            "value": "0.5",
+            "display_type": "warning dashed",
+            "label": "Target: 50%"
+          }
+        ]
+      },
+      "layout": {
+        "x": 61,
+        "y": 90,
+        "width": 33,
+        "height": 15
+      }
+    },
+    {
+      "id": 24,
+      "definition": {
+        "type": "timeseries",
+        "title": "Cache Hits & Misses",
+        "requests": [
+          {
+            "q": "sum:llm.cache.hits{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "sum:llm.cache.misses{*}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Count/sec",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 120,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 25,
+      "definition": {
+        "type": "query_value",
+        "title": "Cache Size",
+        "requests": [
+          {
+            "q": "avg:llm.cache.size{*}",
+            "aggregator": "avg"
+          }
+        ],
+        "precision": 0,
+        "text_align": "center",
+        "custom_unit": "entries"
+      },
+      "layout": {
+        "x": 47,
+        "y": 120,
+        "width": 15,
+        "height": 15
+      }
+    },
+    {
+      "id": 23,
+      "definition": {
+        "type": "toplist",
+        "title": "Top Cost Savings Recommendations",
+        "requests": [
+          {
+            "q": "sum:llm.cost.recommendation.savings{*} by {recommendation_type,model,alternative_model}"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 105,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
       "id": 5,
       "definition": {
         "type": "timeseries",
@@ -524,9 +720,9 @@
         "tags_execution": "and"
       },
       "layout": {
-        "x": 0,
-        "y": 90,
-        "width": 94,
+        "x": 47,
+        "y": 105,
+        "width": 47,
         "height": 20
       }
     }

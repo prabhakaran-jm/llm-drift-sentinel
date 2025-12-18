@@ -10,6 +10,7 @@ import AlertsView from './AlertsView'
 import SettingsModal from './SettingsModal'
 import { evaluateRules } from '../utils/rulesStorage'
 import { saveMessages, loadMessages, saveFlaggedSessions, loadFlaggedSessions, saveSessionMessages, loadSessionMessages, getAllSessionIds, deleteSession } from '../utils/messageStorage'
+import { getApiUrl } from '../config'
 
 interface Message {
   id: string
@@ -349,7 +350,7 @@ function ChatInterface() {
     setError(null)
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(getApiUrl('/api/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -64,7 +64,7 @@ export default function Dashboard({ messages, flaggedSessions }: DashboardProps)
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="dark:bg-[#1a1a1a] bg-white dark:border-[#27272a] border-slate-200 border rounded-lg p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <span className="dark:text-white/50 text-slate-600 text-sm">Total Messages</span>
@@ -91,6 +91,17 @@ export default function Dashboard({ messages, flaggedSessions }: DashboardProps)
             <div className="text-2xl font-bold dark:text-white text-slate-900">{(avgSafetyScore * 100).toFixed(0)}%</div>
             <div className="text-xs dark:text-white/40 text-slate-500 mt-1">
               {avgSafetyScore >= 0.7 ? 'Safe' : avgSafetyScore >= 0.3 ? 'Risky' : 'Critical'}
+            </div>
+          </div>
+
+          <div className="dark:bg-[#1a1a1a] bg-white dark:border-[#27272a] border-slate-200 border rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="dark:text-white/50 text-slate-600 text-sm">Avg Drift Score</span>
+              <span className="material-symbols-outlined text-[#facc15]">trending_up</span>
+            </div>
+            <div className="text-2xl font-bold dark:text-white text-slate-900">{(avgDriftScore * 100).toFixed(2)}%</div>
+            <div className="text-xs dark:text-white/40 text-slate-500 mt-1">
+              {avgDriftScore < 0.05 ? 'Stable' : avgDriftScore < 0.15 ? 'Moderate' : 'High drift'}
             </div>
           </div>
 

@@ -4,6 +4,8 @@ import { Config } from '../config.js';
 import { computeDrift } from '../engines/driftEngine.js';
 import { checkSafety } from '../engines/safetyEngine.js';
 import { AnomalyDetector } from '../engines/anomalyEngine.js';
+import { CostOptimizer } from '../engines/costOptimizer.js';
+import { PatternDetector } from '../engines/patternEngine.js';
 import { BigQueryWriter } from './bigqueryWriter.js';
 import { EmbeddingsClient } from './embeddingsClient.js';
 import { BaselineStore } from './baselineStore.js';
@@ -19,6 +21,8 @@ export class PubSubConsumer {
   private safetyClassifier: SafetyClassifier;
   private datadogClient: DatadogClient;
   private anomalyDetector: AnomalyDetector;
+  private costOptimizer: CostOptimizer;
+  private patternDetector: PatternDetector;
   private isRunning: boolean = false;
 
   constructor(
@@ -39,6 +43,8 @@ export class PubSubConsumer {
     this.safetyClassifier = safetyClassifier;
     this.datadogClient = datadogClient;
     this.anomalyDetector = new AnomalyDetector();
+    this.costOptimizer = new CostOptimizer(embeddingsClient);
+    this.patternDetector = new PatternDetector();
   }
 
   async start(): Promise<void> {
@@ -104,8 +110,33 @@ export class PubSubConsumer {
         anomaly: anomalyResult.isAnomaly ? { zScore: anomalyResult.zScore } : null,
       });
 
+      // Record event for cost analysis
+      this.costOptimizer.recordEvent(event);
+
+      // Record event for pattern detection
+      this.patternDetector.recordEvent(event, safetyResult);
+
+      // Detect attack patterns
+      const patterns = this.patternDetector.detectPatterns();
+      if (patterns.length > 0) {
+        for (const pattern of patterns) {
+          await this.datadogClient.emitPatternEvent(event, pattern);
+        }
+      }
+
       // Emit Datadog metrics (including anomaly if detected)
       await this.datadogClient.emitMetrics(event, driftResult, safetyResult, anomalyResult);
+
+      // Emit cost metrics
+      await this.datadogClient.emitCostMetrics(event, this.costOptimizer);
+
+      // Emit cache metrics (periodically, not every request to avoid spam)
+      // Emit every 10th request to track cache performance
+      const requestNumber = parseInt(event.requestId.slice(-2), 16) || 0;
+      if (requestNumber % 10 === 0) {
+        const cacheStats = this.embeddingsClient.getCacheStats();
+        await this.datadogClient.emitCacheMetrics(cacheStats);
+      }
 
       // Emit Datadog event for high-risk safety issues
       await this.datadogClient.emitSafetyEvent(event, safetyResult);
