@@ -10,13 +10,17 @@ Monitor LLM applications on Vertex AI / Gemini. Detect drift and abuse, push met
 
 ## Architecture
 
+![System Architecture](docs/System_Architecture.png)
+
 - Web React client → Sentinel Gateway (Cloud Run) → Vertex AI / Gemini
 - Gateway emits telemetry events for each LLM call
 - Telemetry flows to Pub/Sub and BigQuery
 - Sentinel Analyzer consumes telemetry, computes drift and safety signals
 - Analyzer sends metrics and events to Datadog
 
-📊 **[View Detailed Architecture with APM Flow →](docs/ARCHITECTURE.md)**
+![APM Tracing Flow](docs/APM_Tracing_Flow.png)
+
+📊 **[View Detailed Architecture Documentation →](docs/ARCHITECTURE.md)**
 
 ## Tech Stack
 
