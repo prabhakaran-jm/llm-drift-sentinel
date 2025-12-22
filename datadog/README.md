@@ -190,7 +190,7 @@ curl -X POST "https://api.datadoghq.com/api/v1/monitor" \
 
 ## Documentation
 
+- `../docs/ARCHITECTURE.md` - System architecture and observability approach
 - `../docs/DETECTION_RULES.md` - Detailed monitor documentation
-- `../docs/OBSERVABILITY_STRATEGY.md` - Overall observability strategy
-- `../docs/INCIDENT_EXAMPLE.md` - Incident management examples
+- `../docs/TROUBLESHOOTING.md` - Troubleshooting guide
 

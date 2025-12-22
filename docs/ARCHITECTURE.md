@@ -452,8 +452,7 @@ See `infra/README.md` for Terraform infrastructure setup.
 
 ## Related Documentation
 
-- [Observability Strategy](./OBSERVABILITY_STRATEGY.md) - Detailed observability approach
 - [Detection Rules](./DETECTION_RULES.md) - Monitor configurations
-- [Incident Example](./INCIDENT_EXAMPLE.md) - Incident management workflow
+- [Detection Rules](./DETECTION_RULES.md) - Monitor documentation and incident management
 - [README](../README.md) - Getting started guide
 

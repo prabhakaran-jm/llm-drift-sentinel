@@ -53,7 +53,7 @@ export default function Dashboard({ messages, flaggedSessions }: DashboardProps)
             <p className="text-sm dark:text-white/50 text-slate-600 mt-1">Overview of LLM Sentinel activity</p>
           </div>
           <a
-            href="https://app.datadoghq.com"
+            href="https://app.datadoghq.com/dashboard/dna-pyc-73v"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-[#632CA6] hover:bg-[#7B3FC0] text-white rounded-lg shadow-sm"

@@ -128,9 +128,9 @@ curl http://localhost:3000/health
 ├── scripts/              # Utility scripts
 │   └── traffic-generator.ts  # Traffic generator for testing
 └── docs/                 # Documentation
-    ├── OBSERVABILITY_STRATEGY.md
-    ├── DETECTION_RULES.md
-    └── INCIDENT_EXAMPLE.md
+    ├── ARCHITECTURE.md
+    ├── TROUBLESHOOTING.md
+    └── DETECTION_RULES.md
 ```
 
 ## Infrastructure Setup
@@ -555,18 +555,14 @@ When detection rules fire, they create Datadog events that can trigger incident 
 4. **Investigation**: Engineers review dashboard, events, and BigQuery
 5. **Resolution**: Update status and document root cause
 
-See `docs/INCIDENT_EXAMPLE.md` for detailed incident workflow examples.
+See `docs/DETECTION_RULES.md` for detailed monitor and incident documentation.
 
 ### Observability Strategy
 
 For a comprehensive overview of our observability approach, see:
 - `docs/ARCHITECTURE.md` - System architecture with APM tracing flow
-- `QUICK_TEST_APM.md` - Quick reference for APM testing
 - `docs/TROUBLESHOOTING.md` - Comprehensive troubleshooting guide
-- `docs/PERFORMANCE_BENCHMARKS.md` - Performance benchmarks and metrics
-- `docs/OBSERVABILITY_STRATEGY.md` - Overall strategy and architecture
 - `docs/DETECTION_RULES.md` - Detailed monitor documentation
-- `docs/INCIDENT_EXAMPLE.md` - Incident management examples
 
 ## Phase 7: Frontend Polish
 
