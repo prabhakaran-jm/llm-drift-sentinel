@@ -1,5 +1,11 @@
 # LLM Drift & Abuse Sentinel
 
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Google%20Cloud%20Run-green.svg)
+![Infrastructure](https://img.shields.io/badge/Infrastructure-Terraform-purple.svg)
+![Monitoring](https://img.shields.io/badge/Monitoring-Datadog-632CA6.svg)
+![LLM](https://img.shields.io/badge/LLM-Vertex%20AI%20%2F%20Gemini-orange.svg)
+
 Monitor LLM applications on Vertex AI / Gemini. Detect drift and abuse, push metrics to Datadog.
 
 ## Architecture
