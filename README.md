@@ -396,22 +396,22 @@ DATADOG_ENABLED=true
 We've configured **5 monitors** in Datadog for comprehensive alerting:
 
 1. **LLM High Error Rate Alert** (`datadog/monitors/llm-high-error-rate.json`)
-   - Detects: > 10 errors in 5 minutes
-   - Priority: Critical (P1)
+   - Detects: > 10 errors in 5 minutes (Warning: > 5 errors)
+   - Priority: Critical (P3)
    - Action: Check gateway logs, verify Vertex AI status
 
 2. **LLM High Latency Warning** (`datadog/monitors/llm-high-latency.json`)
-   - Detects: Average latency > 5 seconds over 10 minutes
+   - Detects: Average latency > 10 seconds over 10 minutes (Warning: > 5 seconds)
    - Priority: Warning (P2)
    - Action: Review model selection, check network connectivity
 
 3. **LLM Drift Detection Alert** (`datadog/monitors/llm-drift-detection.json`)
-   - Detects: Average drift score > 0.2 over 15 minutes
+   - Detects: Average drift score > 0.4 over 15 minutes (Warning: > 0.2)
    - Priority: Warning (P2)
    - Action: Review prompts, check model version changes
 
 4. **LLM Safety Score Critical** (`datadog/monitors/llm-safety-score-critical.json`)
-   - Detects: Average safety score < 0.5 over 5 minutes
+   - Detects: Average safety score <= 0.3 over 5 minutes (Warning: <= 0.5)
    - Priority: Critical (P1)
    - Action: Review safety events, implement filters
 
